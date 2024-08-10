@@ -10,8 +10,10 @@ using DBChatPro;
 using MudBlazor;
 using DBChatPro.Services;
 
-namespace DBChatPro.Components.Pages {
-   public partial class Home : ComponentBase {
+namespace DBChatPro.Components.Pages
+{
+   public partial class Home : ComponentBase
+   {
       // Table styling
       private bool dense = false;
       private bool hover = true;
@@ -25,7 +27,6 @@ namespace DBChatPro.Components.Pages {
       private bool Loading = false;
       private string LoadingMessage = String.Empty;
       public AIConnection ActiveConnection { get; set; } = new();
-
       // Data lists
       public List<HistoryItem> History { get; set; } = new();
       public List<HistoryItem> Favorites { get; set; } = new();
@@ -42,41 +43,50 @@ namespace DBChatPro.Components.Pages {
       // UI Drawer stuff
       bool open = true;
       Anchor anchor;
-      void ToggleDrawer(Anchor anchor) {
+      void ToggleDrawer(Anchor anchor)
+      {
          open = !open;
          this.anchor = anchor;
       }
 
-      protected override async Task OnInitializedAsync() {
+      protected override async Task OnInitializedAsync()
+      {
          Connections = DatabaseService.GetAIConnections();
-         if (Connections.Count > 0) {
+         if (Connections.Count > 0)
+         {
             ActiveConnection = Connections.FirstOrDefault();
-         } else {
+         }
+         else
+         {
             ActiveConnection = new AIConnection() { SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
          }
          History = HistoryService.GetQueries(ActiveConnection.Name);
          Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
       }
 
-      private void SaveFavorite() {
+      private void SaveFavorite()
+      {
          HistoryService.SaveFavorite(FmModel.Prompt, ActiveConnection.Name);
          Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
          Snackbar.Add("Saved favorite!", Severity.Success);
       }
 
-      private void EditQuery() {
+      private void EditQuery()
+      {
          RowData = DatabaseService.GetDataTable(ActiveConnection, Query);
          Snackbar.Add("Results updated.", Severity.Success);
       }
 
-      public void LoadDatabase(string dbName) {
+      public void LoadDatabase(string dbName)
+      {
          ActiveConnection = DatabaseService.GetAIConnections().FirstOrDefault(x => x.Name == dbName);
          History = HistoryService.GetQueries(ActiveConnection.Name);
          Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
          ClearUI();
       }
 
-      private void ClearUI() {
+      private void ClearUI()
+      {
          Prompt = String.Empty;
          Summary = String.Empty;
          Query = String.Empty;
@@ -85,17 +95,21 @@ namespace DBChatPro.Components.Pages {
          FmModel = new FormModel();
       }
 
-      public async Task LoadHistoryItem(string query) {
+      public async Task LoadHistoryItem(string query)
+      {
          FmModel.Prompt = query;
          await RunDataChat(query);
       }
 
-      public async Task OnSubmit() {
+      public async Task OnSubmit()
+      {
          await RunDataChat(FmModel.Prompt);
       }
 
-      public async Task RunDataChat(string Prompt) {
-         try {
+      public async Task RunDataChat(string Prompt)
+      {
+         try
+         {
             Loading = true;
             LoadingMessage = "Getting the AI query...";
             var aiResponse = await OpenAIService.GetAISQLQuery(Prompt, ActiveConnection);
@@ -103,28 +117,36 @@ namespace DBChatPro.Components.Pages {
             Query = aiResponse.query;
             Summary = aiResponse.summary;
 
-            LoadingMessage = "Running the Database query...";
-            if (!Query.ToLower().Contains("delete")) {
-               RowData = DatabaseService.GetDataTable(ActiveConnection, aiResponse.query);
+            // LoadingMessage = "Running the Database query...";
+            // if (!Query.ToLower().Contains("delete")) {
+            //    RowData = DatabaseService.GetDataTable(ActiveConnection, aiResponse.query);
 
-               Loading = false;
-               HistoryService.SaveQuery(Prompt, ActiveConnection.Name);
-               History = HistoryService.GetQueries(ActiveConnection.Name);
-               Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
-               Error = string.Empty;
-            } else {
-               Loading = false;
-               LoadingMessage = String.Empty;
-               Error = "Delete queries are not allowed.";
-            }
-         } catch (Exception e) {
+            Loading = false;
+            //    HistoryService.SaveQuery(Prompt, ActiveConnection.Name);
+            //    History = HistoryService.GetQueries(ActiveConnection.Name);
+            //    Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
+            //    Error = string.Empty;
+            // } else {
+            //    Loading = false;
+            //    LoadingMessage = String.Empty;
+            //    Error = "Delete queries are not allowed.";
+            // }
+         }
+         catch (Exception e)
+         {
             Error = e.Message;
             Loading = false;
             LoadingMessage = String.Empty;
          }
       }
-      private void FilterTables() {
-         if (!string.IsNullOrEmpty(filterText)) {
+      private void Clear()
+      {
+         FmModel.Prompt = string.Empty;
+      }
+      private void FilterTables()
+      {
+         if (!string.IsNullOrEmpty(filterText))
+         {
             ActiveConnection.SchemaStructured = ActiveConnection.SchemaStructured.Where(x => x.TableName.ToLower().Contains(filterText.ToLower())).ToList();
          }
       }
