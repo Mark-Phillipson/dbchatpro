@@ -17,37 +17,49 @@ namespace DBChatPro
 
                 using (SqlCommand command = new SqlCommand(sqlQuery, connection))
                 {
-                    using (SqlDataReader reader = command.ExecuteReader())
+                    try
                     {
-                        int count = 0;
-                        bool headersAdded = false;
-                        while (reader.Read())
+                        using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            var cols = new List<string>();
-                            var headerCols = new List<string>();
-                            if (!headersAdded)
+                            bool headersAdded = false;
+                            while (reader.Read())
                             {
-                                for (int i = 0; i < reader.FieldCount; i++)
+                                var cols = new List<string>();
+                                var headerCols = new List<string>();
+                                if (!headersAdded)
                                 {
-                                    headerCols.Add(reader.GetName(i).ToString());
+                                    for (int i = 0; i < reader.FieldCount; i++)
+                                    {
+                                        headerCols.Add(reader.GetName(i).ToString());
+                                    }
+                                    headersAdded = true;
+                                    rows.Add(headerCols);
                                 }
-                                headersAdded = true;
-                                rows.Add(headerCols);
-                            }
 
-                            for (int i = 0; i <= reader.FieldCount - 1; i++)
-                            {
-                                try
+                                for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    cols.Add(reader.GetValue(i).ToString());
+                                    try
+                                    {
+                                        var value = reader.GetValue(i).ToString();
+                                        if (value != null)
+                                        {
+                                            cols.Add(value);
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        cols.Add("DataTypeConversionError");
+                                    }
                                 }
-                                catch
-                                {
-                                    cols.Add("DataTypeConversionError");
-                                }
+                                rows.Add(cols);
                             }
-                            rows.Add(cols);
                         }
+                    }
+                    catch (System.Exception exception)
+                    {
+                        System.Console.WriteLine(exception.Message);
+                        List<string> strings = new List<string>() { $"There appears to be a mistake in the SQL statement: {exception.Message}" };
+                        return new List<List<string>>() { strings };
                     }
                 }
             }
@@ -69,7 +81,6 @@ namespace DBChatPro
                 {
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
-                        int count = 0;
                         bool headersAdded = false;
                         while (reader.Read())
                         {
@@ -108,8 +119,15 @@ namespace DBChatPro
         public static List<TableSchema> GetSchema()
         {
             var schema = File.ReadAllText("Schema.txt");
-
-            return JsonSerializer.Deserialize<List<TableSchema>>(schema);
+            var result = JsonSerializer.Deserialize<List<TableSchema>>(schema);
+            if (result != null)
+            {
+                return result;
+            }
+            else
+            {
+                return new List<TableSchema>();
+            }
         }
 
         public static List<AIConnection> GetAIConnections()
@@ -117,11 +135,19 @@ namespace DBChatPro
             try
             {
                 var schema = File.ReadAllText("AIConnections.txt");
-
-                return JsonSerializer.Deserialize<List<AIConnection>>(schema);
-            } 
-            catch(Exception e)
+                var result = JsonSerializer.Deserialize<List<AIConnection>>(schema);
+                if (result != null)
+                {
+                    return result;
+                }
+                else
+                {
+                    return new List<AIConnection>();
+                }
+            }
+            catch (Exception e)
             {
+                System.Console.WriteLine(e.Message);
                 return new List<AIConnection>();
             }
         }

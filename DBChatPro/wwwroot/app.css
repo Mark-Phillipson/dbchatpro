@@ -27,6 +27,14 @@ body {
     padding: 8px !important;
 }
 
-.mud-table-row .mud-table-cell, .mud-table-cell {
+.mud-table-row .mud-table-cell,
+.mud-table-cell {
     padding: 4px !important;
+}
+
+.mono-font {
+    font-family: 'Cascadia Mono', sans-serif;
+    /* Replace 'YourFontFamily' with the desired font family */
+    font-size: 16px;
+    /* Adjust the font size as needed */
 }

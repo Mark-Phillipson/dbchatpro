@@ -16,13 +16,13 @@
             });
         }
 
-        public static void SaveQuery(string query, string connectionName)
+        public static void SaveHistory(string prompt, string connectionName, string query)
         {
             Queries.Add(new HistoryItem()
             {
                 Id = new Random().Next(0, 10000),
                 Query = query,
-                Name = query,
+                Name = prompt,
                 ConnectionName = connectionName
             });
         }
@@ -41,8 +41,8 @@
     public class HistoryItem
     {
         public int Id { get; set; }
-        public string Query { get; set; }
-        public string Name { get; set; }
-        public string ConnectionName { get; set; }
+        public string? Query { get; set; }
+        public string? Name { get; set; }
+        public string? ConnectionName { get; set; }
     }
 }

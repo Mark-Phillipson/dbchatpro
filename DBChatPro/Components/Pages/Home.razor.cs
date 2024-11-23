@@ -9,17 +9,21 @@ using DBChatPro.Models;
 using DBChatPro;
 using MudBlazor;
 using DBChatPro.Services;
+using Microsoft.JSInterop;
 
 namespace DBChatPro.Components.Pages
 {
    public partial class Home : ComponentBase
    {
+      private string defaultConnectionName = "Packtex";
+      [Inject] public required IJSRuntime JSRuntime { get; set; }
       // Table styling
       private bool dense = false;
-      private bool hover = true;
+      private MudTabs? mudResultTabs = null;
+      // private bool hover = true;
       private bool striped = true;
       private bool bordered = true;
-
+      private bool showResultsOnly = false;
       // Form data
       public FormModel FmModel { get; set; } = new FormModel();
 
@@ -49,39 +53,76 @@ namespace DBChatPro.Components.Pages
          this.anchor = anchor;
       }
 
-      protected override async Task OnInitializedAsync()
+      protected override void OnInitialized()
       {
          Connections = DatabaseService.GetAIConnections();
-         if (Connections.Count > 0)
+         if (Connections != null && Connections.Count > 0)
          {
-            ActiveConnection = Connections.FirstOrDefault();
+            var connection = Connections.FirstOrDefault(c => c.Name == defaultConnectionName);
+            if (connection != null)
+            {
+               ActiveConnection = connection;
+            }
          }
          else
          {
             ActiveConnection = new AIConnection() { SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
          }
-         History = HistoryService.GetQueries(ActiveConnection.Name);
-         Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
+         if (ActiveConnection == null)
+         {
+            return;
+         }
+         History = HistoryService.GetQueries(ActiveConnection.Name ?? "Name Undefined");
+         Favorites = HistoryService.GetFavorites(ActiveConnection.Name ?? "Name Undefined");
       }
 
       private void SaveFavorite()
       {
-         HistoryService.SaveFavorite(FmModel.Prompt, ActiveConnection.Name);
-         Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
+         if (ActiveConnection == null)
+         {
+            Snackbar.Add("Please select a database connection first.", Severity.Error);
+            return;
+         }
+         HistoryService.SaveFavorite(FmModel.Prompt, ActiveConnection.Name ?? "Name Undefined");
+         Favorites = HistoryService.GetFavorites(ActiveConnection.Name ?? "Name Undefined");
          Snackbar.Add("Saved favorite!", Severity.Success);
       }
 
-      private void EditQuery()
+      private void ExecuteDatabaseQuery()
       {
+         if (ActiveConnection == null)
+         {
+            Snackbar.Add("Please select a database connection first.", Severity.Error);
+            return;
+         }
+         // Check if the query is a SELECT statement
+         if ((!Query.Trim().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase) || Query.Trim().Contains("EXEC", StringComparison.OrdinalIgnoreCase)) || Query.Count(c => c == ';') > 1)
+         {
+            Snackbar.Add("Only single SELECT queries are allowed. You can however copy the SQL and run it in a different tool, for example Azure Data Studio", Severity.Error);
+            return;
+         }
          RowData = DatabaseService.GetDataTable(ActiveConnection, Query);
          Snackbar.Add("Results updated.", Severity.Success);
+         if (mudResultTabs != null)
+         {
+            mudResultTabs.ActivatePanel(0);
+         }
       }
 
       public void LoadDatabase(string dbName)
       {
-         ActiveConnection = DatabaseService.GetAIConnections().FirstOrDefault(x => x.Name == dbName);
-         History = HistoryService.GetQueries(ActiveConnection.Name);
-         Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
+         var connection = DatabaseService.GetAIConnections().FirstOrDefault(x => x.Name == dbName);
+         if (connection != null)
+         {
+            ActiveConnection = connection;
+         }
+         if (ActiveConnection == null)
+         {
+            Snackbar.Add("Please select a database connection first.", Severity.Error);
+            return;
+         }
+         History = HistoryService.GetQueries(ActiveConnection.Name ?? "Name Undefined");
+         Favorites = HistoryService.GetFavorites(ActiveConnection.Name ?? "Name Undefined");
          ClearUI();
       }
 
@@ -95,42 +136,48 @@ namespace DBChatPro.Components.Pages
          FmModel = new FormModel();
       }
 
-      public async Task LoadHistoryItem(string query)
+      public async Task LoadHistoryItem(string prompt)
       {
-         FmModel.Prompt = query;
-         await RunDataChat(query);
+         FmModel.Prompt = prompt;
+         await GenerateSQLQueryFromPrompt(prompt);
       }
 
       public async Task OnSubmit()
       {
-         await RunDataChat(FmModel.Prompt);
+         await GenerateSQLQueryFromPrompt(FmModel.Prompt);
       }
 
-      public async Task RunDataChat(string Prompt)
+      public async Task GenerateSQLQueryFromPrompt(string Prompt)
       {
+         if (ActiveConnection == null)
+         {
+            Snackbar.Add("Please select a database connection first.", Severity.Error);
+            return;
+         }
          try
          {
             Loading = true;
             LoadingMessage = "Getting the AI query...";
             var aiResponse = await OpenAIService.GetAISQLQuery(Prompt, ActiveConnection);
 
-            Query = aiResponse.query;
-            Summary = aiResponse.summary;
-
-            // LoadingMessage = "Running the Database query...";
-            // if (!Query.ToLower().Contains("delete")) {
-            //    RowData = DatabaseService.GetDataTable(ActiveConnection, aiResponse.query);
-
+            if (aiResponse.query != null)
+            {
+               Query = aiResponse.query;
+            }
+            if (aiResponse.summary != null)
+            {
+               Summary = aiResponse.summary;
+            }
+            HistoryService.SaveHistory(Prompt, ActiveConnection.Name ?? "Name Undefined", aiResponse.
+            query ?? "Query Undefined");
+            History = HistoryService.GetQueries(ActiveConnection.Name ?? "Name Undefined");
             Loading = false;
-            //    HistoryService.SaveQuery(Prompt, ActiveConnection.Name);
-            //    History = HistoryService.GetQueries(ActiveConnection.Name);
-            //    Favorites = HistoryService.GetFavorites(ActiveConnection.Name);
-            //    Error = string.Empty;
-            // } else {
-            //    Loading = false;
-            //    LoadingMessage = String.Empty;
-            //    Error = "Delete queries are not allowed.";
-            // }
+            //Show the insight tab here
+            if (mudResultTabs != null)
+            {
+               mudResultTabs.ActivatePanel(1);
+            }
+            StateHasChanged();
          }
          catch (Exception e)
          {
@@ -139,16 +186,30 @@ namespace DBChatPro.Components.Pages
             LoadingMessage = String.Empty;
          }
       }
-      private void Clear()
+      private async Task Clear()
       {
          FmModel.Prompt = string.Empty;
+         // Move the focus to the prompt input
+         await JSRuntime.InvokeVoidAsync("focusElement", "prompt");
+
       }
+      List<TableSchema> beforeFilter = new List<TableSchema>();
       private void FilterTables()
       {
-         if (!string.IsNullOrEmpty(filterText))
+         if (!string.IsNullOrEmpty(filterText) && ActiveConnection != null)
          {
-            ActiveConnection.SchemaStructured = ActiveConnection.SchemaStructured.Where(x => x.TableName.ToLower().Contains(filterText.ToLower())).ToList();
+            beforeFilter = ActiveConnection.SchemaStructured ?? new List<TableSchema>();
+            ActiveConnection.SchemaStructured = ActiveConnection?.SchemaStructured?.Where(x => x.TableName != null && x.TableName.ToLower().Contains(filterText.ToLower())).ToList();
          }
+         else if (string.IsNullOrEmpty(filterText) && ActiveConnection != null)
+         {
+            ActiveConnection.SchemaStructured = beforeFilter;
+         }
+      }
+      private async Task CopyToClipboard()
+      {
+         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Query);
+         Snackbar.Add("Query copied to clipboard!", Severity.Success);
       }
    }
 }
