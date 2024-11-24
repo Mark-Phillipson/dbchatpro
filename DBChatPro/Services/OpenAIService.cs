@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualBasic;
 using Azure;
 using Azure.AI.OpenAI;
+using Microsoft.Extensions.Configuration;
 namespace DBChatPro.Services
 {
    public class OpenAIService
@@ -16,14 +17,26 @@ namespace DBChatPro.Services
       private static readonly Azure.AI.OpenAI.AzureOpenAIClient openAIClient;
       static OpenAIService()
       {
-         string apiKey = Constants.OpenAIAPIKEY;
+         var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+
+         string? apiKey = configuration["AzureOpenAI:ApiKey"];
+
          string endpoint = "https://openai-packtex.openai.azure.com/";
 
          httpClient.BaseAddress = new Uri(endpoint);
          httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-         var credential = new AzureKeyCredential(apiKey);
-         openAIClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+         if (apiKey != null)
+         {
+            var credential = new AzureKeyCredential(apiKey);
+            openAIClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+         }
+         else
+         {
+            throw new Exception("AzureOpenAI:ApiKey is not set in appsettings.json");
+         }
       }
       public static async Task<AIQuery> GetAISQLQuery(string userPrompt, AIConnection aiConnection)
       {
