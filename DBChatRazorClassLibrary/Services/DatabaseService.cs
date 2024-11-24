@@ -13,16 +13,7 @@ namespace DBChatPro
             var rows = new List<List<string>>();
             using (SqlConnection connection = new SqlConnection(conn.ConnectionString))
             {
-                try
-                {
-                    connection.Open();
-                }
-                catch (System.Exception exception)
-                {
-                    System.Console.WriteLine(exception.Message);
-                    List<string> strings = new List<string>() { $"There appears to be a mistake in the connection string: {exception.Message}" };
-                    return new List<List<string>>() { strings };
-                }
+                connection.Open();
 
                 using (SqlCommand command = new SqlCommand(sqlQuery, connection))
                 {

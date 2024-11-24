@@ -1,229 +1,106 @@
 ﻿@page "/connect-db"
 
-@using System.ComponentModel.DataAnnotations
-@using System.Text.Json
-@using Microsoft.Data.SqlClient
 
 <div Class="ma-4">
     <h1>Manage Database Connections</h1>
     <MudDivider />
-    <EditForm Model="@Connection" OnValidSubmit="OnValidSubmit">
-        <DataAnnotationsValidator />
-        <MudGrid Class="mt-6">
-            <MudItem xs="12" md="6">
-                <h2 Class="mb-6">Add a Connection</h2>
-                <div>
-                    <p>Provide a connection string below to connect to a database and extract the schema. The schema is
-                        used by the AI to build queries for your database.</p>
-                    <MudAlert Class="my-6" Severity="Severity.Info">The AI service does NOT have access to the database
-                        or data records - it only understands the schema.</MudAlert>
-                    @if (!string.IsNullOrEmpty(Error))
-                    {
-                        <MudAlert Class="my-6" Severity="Severity.Error">An error occured: @Error</MudAlert>
-                    }
-                </div>
-                <MudCard>
-                    <MudCardContent>
-                        <MudTextField @bind-Value="Connection.Name" T="string" Label="Connection name"
-                            Variant="Variant.Text" />
-                        <MudTextField @bind-Value="Connection.ConnectionString" T="string" Label="Connection string"
-                            Variant="Variant.Text" Lines="5" />
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
-                            Class="ml-auto">Generate Schema</MudButton>
-                    </MudCardActions>
-                </MudCard>
-                @if (aiConnection != null && aiConnection.SchemaStructured != null &&
-                aiConnection.SchemaStructured.Count >
-                0)
-                {
-                    <MudCard Class="my-6">
+    @if (Connection == null)
+    {
+        <MudAlert Severity="Severity.Info">Please provide a connection string to connect to a database and extract the
+            schema.</MudAlert>
+    }
+    else
+    {
+        <EditForm Model="@Connection" OnValidSubmit="OnValidSubmit">
+            <DataAnnotationsValidator />
+            <MudGrid Class="mt-6">
+                <MudItem xs="12" md="6">
+                    <h2 Class="mb-6">Add a Connection</h2>
+                    <div>
+                        <p>Provide a connection string below to connect to a database and extract the schema. The schema is
+                            used by the AI to build queries for your database.</p>
+                        <MudAlert Class="my-6" Severity="Severity.Info">The AI service does NOT have access to the database
+                            or data records - it only understands the schema.</MudAlert>
+                        @if (!string.IsNullOrEmpty(Error))
+                        {
+                            <MudAlert Class="my-6" Severity="Severity.Error">An error occured: @Error</MudAlert>
+                        }
+                    </div>
+                    <MudCard>
                         <MudCardContent>
-                            <p>
-                                The following tables and columns were discovered. Do you want to save this schema?
-                                <MudButton Style="float:right" OnClick="() => SaveSchema()" ButtonType="ButtonType.Submit"
-                                    Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Save</MudButton>
-                            </p>
-                            <div Class="my-6">
-                                <MudTreeView T="string">
-                                    @foreach (var table in aiConnection.SchemaStructured)
-                                    {
-                                        <MudTreeViewItem Value="@table.TableName">
-                                            @if (table != null && table.Columns != null && table.Columns.Count > 0)
-                                            {
-                                                @foreach (var col in table.Columns)
-                                                {
-                                                    <MudTreeViewItem Value="@col" />
-                                                }
-                                            }
-                                        </MudTreeViewItem>
-                                    }
-                                </MudTreeView>
-                            </div>
+                            <MudTextField @bind-Value="Connection.Name" T="string" Label="Connection Name"
+                                Variant="Variant.Text" />
+                            <MudTextField @bind-Value="Connection.ConnectionString" T="string" Label="Connection string"
+                                Variant="Variant.Text" Lines="5" />
+                            <MudTextField Label="Username" @bind-Value="@Username" Variant="Variant.Text" Class="mx-2" />
+                            <MudTextField InputType="InputType.Password" Label="Password" @bind-Value="@Password"
+                                Variant="Variant.Text" Class="mx-2" />
+
                         </MudCardContent>
+                        <MudCardActions>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                                Class="ml-auto">Generate Schema</MudButton>
+                        </MudCardActions>
                     </MudCard>
-                }
-            </MudItem>
-            <MudItem xs="12" md="6">
-                <h2 Class="mb-6 ml-6">Existing Connections</h2>
-                @if (ExistingDbs.Count > 0)
-                {
-                    <MudPaper MaxWidth="100%" Class="my-6">
-
-                        <MudList Clickable="false">
-                            @foreach (var item in ExistingDbs)
-                            {
-                                @if (item != null && item.Name != null)
-                                {
-                                    <MudListItem><span>@item.Name </span>
-                                        <MudIconButton Style="float: right" Icon="@Icons.Material.Filled.Delete"
-                                            OnClick="() => DeleteConnection(item.Name)" Size="Size.Small" Variant="Variant.Filled"
-                                            Color="Color.Secondary">Delete</MudIconButton>
-                                    </MudListItem>
-                                }
-                            }
-                        </MudList>
-                    </MudPaper>
-
-                }
-                else
-                {
-                    <p class="ma-6">No queries yet.</p>
-                }
-            </MudItem>
-        </MudGrid>
-    </EditForm>
-</div>
-
-@code {
-    string Error = String.Empty;
-    AIConnection Connection = new();
-    // bool success;
-    //private bool Loading = false;
-    AIConnection aiConnection = new() { SchemaStructured = new List<TableSchema>(), SchemaRaw = new List<string>() };
-    List<AIConnection> ExistingDbs = new List<AIConnection>();
-
-    protected override void OnInitialized()
-    {
-        try
-        {
-            ExistingDbs = DatabaseService.GetAIConnections();
-        }
-        catch (Exception e)
-        {
-            var test = e.Message;
-        }
-
-    }
-
-    private void DeleteConnection(string name)
-    {
-        ExistingDbs = DatabaseService.GetAIConnections();
-
-        var existing = ExistingDbs.FirstOrDefault(x => x.Name == name);
-        if (existing != null) { ExistingDbs.Remove(existing); }
-        File.WriteAllText(@"AIConnections.txt", JsonSerializer.Serialize(ExistingDbs));
-    }
-
-    private void OnValidSubmit(EditContext context)
-    {
-        try
-        {
-            //Loading = true;
-            aiConnection = GenerateSchema(Connection);
-            //Loading = false;
-            Error = String.Empty;
-        }
-        catch (Exception e)
-        {
-            Error = e.Message;
-        }
-    }
-
-    private void SaveSchema()
-    {
-        var aiConns = new List<AIConnection>();
-        try
-        {
-            aiConns = DatabaseService.GetAIConnections();
-        }
-        catch (Exception e)
-        {
-            Error = e.Message;
-        }
-
-        aiConns.Add(aiConnection);
-
-        File.WriteAllText(@"AIConnections.txt", JsonSerializer.Serialize(aiConns));
-
-        ExistingDbs = DatabaseService.GetAIConnections();
-        Error = String.Empty;
-    }
-
-    private AIConnection GenerateSchema(AIConnection conn)
-    {
-        AIConnection aiCon = new() { SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
-
-        aiCon.Name = conn.Name;
-        aiCon.ConnectionString = conn.ConnectionString;
-        List<KeyValuePair<string, string>> rows = new();
-
-        using (SqlConnection connection = new SqlConnection(conn.ConnectionString))
-        {
-            connection.Open();
-
-            string sql = @"SELECT SCHEMA_NAME(schema_id) + '.' + o.Name AS 'TableName', c.Name as 'ColumName'
-FROM sys.columns c
-JOIN sys.objects o ON o.object_id = c.object_id
-WHERE o.type = 'U'
-ORDER BY o.Name";
-
-            using (SqlCommand command = new SqlCommand(sql, connection))
-            {
-                using (SqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
+                    @if (aiConnection != null && aiConnection.SchemaStructured != null &&
+                   aiConnection.SchemaStructured.Count >
+                   0)
                     {
-                        var table = reader.GetValue(0).ToString();
-                        var column = reader.GetValue(1).ToString();
-                        if (table != null && column != null) { rows.Add(new KeyValuePair<string, string>(table, column)); }
+                        <MudCard Class="my-6">
+                            <MudCardContent>
+                                <p>
+                                    The following tables and columns were discovered. Do you want to save this schema?
+                                    <MudButton Style="float:right" OnClick="() => SaveSchema()" ButtonType="ButtonType.Submit"
+                                        Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Save</MudButton>
+                                </p>
+                                <div Class="my-6">
+                                    <MudTreeView T="string">
+                                        @foreach (var table in aiConnection.SchemaStructured)
+                                        {
+                                            <MudTreeViewItem Value="@table.TableName">
+                                                @if (table != null && table.Columns != null && table.Columns.Count > 0)
+                                                {
+                                                    @foreach (var col in table.Columns)
+                                                    {
+                                                        <MudTreeViewItem Value="@col" />
+                                                    }
+                                                }
+                                            </MudTreeViewItem>
+                                        }
+                                    </MudTreeView>
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
                     }
-                }
-            }
-        }
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <h2 Class="mb-6 ml-6">Existing Connections</h2>
+                    @if (ExistingDbs.Count > 0)
+                    {
+                        <MudPaper MaxWidth="100%" Class="my-6">
 
-        var groups = rows.GroupBy(x => x.Key);
+                            <MudList Clickable="false">
+                                @foreach (var item in ExistingDbs)
+                                {
+                                    @if (item != null && item.Name != null)
+                                    {
+                                        <MudListItem><span>@item.Name </span>
+                                            <MudIconButton Style="float: right" Icon="@Icons.Material.Filled.Delete"
+                                                OnClick="() => DeleteConnection(item.Name)" Size="Size.Small" Variant="Variant.Filled"
+                                                Color="Color.Secondary">Delete</MudIconButton>
+                                        </MudListItem>
+                                    }
+                                }
+                            </MudList>
+                        </MudPaper>
 
-        foreach (var group in groups)
-        {
-            aiCon.SchemaStructured.Add(new TableSchema() { TableName = group.Key, Columns = group.Select(x => x.Value).ToList() });
-            //use this list
-        }
-
-        var textLines = new List<string>();
-
-        foreach (var table in aiCon.SchemaStructured)
-        {
-            var schemaLine = $"- {table.TableName} (";
-
-            @if (table != null && table.Columns != null && table.Columns.Count > 0)
-            {
-                foreach (var column in table.Columns)
-                {
-                    schemaLine += column + ", ";
-                }
-            }
-            schemaLine += ")";
-            schemaLine = schemaLine.Replace(", )", " )");
-
-            Console.WriteLine(schemaLine);
-            textLines.Add(schemaLine);
-        }
-
-        aiCon.SchemaRaw = textLines;
-
-        return aiCon;
+                    }
+                    else
+                    {
+                        <p class="ma-6">No queries yet.</p>
+                    }
+                </MudItem>
+            </MudGrid>
+        </EditForm>
     }
-
-}
+</div>

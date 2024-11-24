@@ -9,15 +9,8 @@
       @if (Connections.Count == 0)
       {
          <MudItem xs="6">
-            @if (Environment.MachineName == "J40L4V3")
-            {
-               <p class="ma-6">You haven't connected a database yet. Visit the <a href="/connect-db">database connection</a>
-                  page to setup a connection.</p>
-            }
-            else
-            {
-               <p class="ma-6">You haven't connected a database yet. Please contact your administrator.</p>
-            }
+            <p class="ma-6">You haven't connected a database yet. Visit the <a href="/connect-db">database connection</a>
+               page to setup a connection.</p>
          </MudItem>
       }
       else
@@ -26,12 +19,6 @@
          <MudItem xs="12">
             <div style="float: right">
                <div style="display: flex; align-items: center;">
-                  @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
-                  {
-                     <MudTextField Label="Username" @bind-Value="@Username" Variant="Variant.Text" Class="mx-2" />
-                     <MudTextField InputType="InputType.Password" Label="Password" @bind-Value="@Password"
-                        Variant="Variant.Text" Class="mx-2" />
-                  }
                   <MudCheckBox accesskey="s" @bind-Value="@showResultsOnly" Label="Show Results Only (Alt+S)"
                      Class="mx-2" />
                   <MudIconButton OnClick="@(() => ToggleDrawer(Anchor.End))" Icon="@Icons.Material.Filled.Menu"
@@ -78,30 +65,12 @@
                      </EditForm>
                      <MudTextField Class="mono-font" @bind-Value="@Query" Text="@Query" T="string"
                         Label="Edit generated query" Variant="Variant.Text" Lines="5" />
-                     <MudButton accesskey="y" @onclick="CopyToClipboard" Class="mx-1 my-6" Variant="Variant.Filled"
+                     <MudButton accesskey="y" @onclick="CopyToClipboard" Class="my-6" Variant="Variant.Filled"
                         Color="Color.Primary">Cop<u>y</u></MudButton>
-                     @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
-                     {
-                        @if (!string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password))
-                        {
-                           <MudButton accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
-                              Color="Color.Primary">E<u>x</u>ecute
-                           </MudButton>
-                        }
-                        else
-                        {
-                           <MudAlert Severity="Severity.Error" Class="my-6">Please enter a username and password.</MudAlert>
-                           <MudButton Disabled="true" accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6"
-                              Variant="Variant.Filled" Color="Color.Primary">E<u>x</u>ecute
-                           </MudButton>
-                        }
-                     }
-                     else
-                     {
-                        <MudButton accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
-                           Color="Color.Primary">E<u>x</u>ecute
-                        </MudButton>
-                     }
+                     <MudButton accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
+                        Color="Color.Primary">E<u>x</u>ecute
+                     </MudButton>
+
                      @if (!string.IsNullOrEmpty(Error))
                      {
                         <p Class="my-6"><b>Error:</b> @Error</p>
@@ -191,7 +160,7 @@
                      </MudTreeView>
                   </MudTabPanel>
                   <MudTabPanel Text="History">
-                     @if (History.Count > 0 && ActiveConnection != null)
+                     @if (History.Count > 0)
                      {
                         <p class="mb-6">Query history for <b>@ActiveConnection.Name</b></p>
                         <MudPaper>
@@ -214,7 +183,7 @@
                      }
                   </MudTabPanel>
                   <MudTabPanel Text="Favorites">
-                     @if (Favorites.Count > 0 && ActiveConnection != null)
+                     @if (Favorites.Count > 0)
                      {
                         <p class="mb-6">Your saved queries for <b>@ActiveConnection.Name</b></p>
                         <MudPaper>
@@ -233,10 +202,7 @@
                      }
                      else
                      {
-                        @if (ActiveConnection != null)
-                        {
-                           <p class="mb-6">You haven't saved any favorites for <b>@ActiveConnection.Name</b> yet.</p>
-                        }
+                        <p class="mb-6">You haven't saved any favorites for <b>@ActiveConnection.Name</b> yet.</p>
                      }
                   </MudTabPanel>
                </MudTabs>

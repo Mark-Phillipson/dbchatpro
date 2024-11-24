@@ -8,13 +8,15 @@
 
 
 	<ItemGroup>
+		<PackageReference Include="Azure.AI.OpenAI" Version="2.0.0" />
 		<PackageReference Include="Azure.Identity" Version="1.13.1" />
 		<PackageReference Include="Microsoft.Identity.Client" Version="4.66.2" />
 		<PackageReference Include="System.Formats.Asn1" Version="9.0.0" />
 		<ProjectReference Include="..\DBChatPro.Client\DBChatPro.Client.csproj" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.0-rc.2.23480.2" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server"
+			Version="8.0.0-rc.2.23480.2" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
-		<PackageReference Include="OpenAI" Version="2.0.0-beta.7" />
+
 	</ItemGroup>
 
 </Project>

@@ -15,7 +15,7 @@ namespace DBChatPro.Components.Pages
 {
    public partial class Home : ComponentBase
    {
-      private string defaultConnectionName = "Packtex Live";
+      private string defaultConnectionName = "Packtex";
       [Inject] public required IJSRuntime JSRuntime { get; set; }
       // Table styling
       private bool dense = false;
@@ -23,17 +23,14 @@ namespace DBChatPro.Components.Pages
       // private bool hover = true;
       private bool striped = true;
       private bool bordered = true;
-      // Webpage Settings
       private bool showResultsOnly = false;
-      public string Username { get; set; } = "";
-      public string Password { get; set; } = "";
       // Form data
       public FormModel FmModel { get; set; } = new FormModel();
 
       // General UI data
       private bool Loading = false;
       private string LoadingMessage = String.Empty;
-      public AIConnection? ActiveConnection { get; set; }
+      public AIConnection ActiveConnection { get; set; } = new();
       // Data lists
       public List<HistoryItem> History { get; set; } = new();
       public List<HistoryItem> Favorites { get; set; } = new();
@@ -69,7 +66,7 @@ namespace DBChatPro.Components.Pages
          }
          else
          {
-            ActiveConnection = new AIConnection() { Name = "New Connection", ConnectionString = "TBC", SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
+            ActiveConnection = new AIConnection() { SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
          }
          if (ActiveConnection == null)
          {
@@ -98,30 +95,11 @@ namespace DBChatPro.Components.Pages
             Snackbar.Add("Please select a database connection first.", Severity.Error);
             return;
          }
-         bool isSelectOnly = MakeSureSelectQueryOnly(Query);
-         if (!isSelectOnly)
+         // Check if the query is a SELECT statement
+         if ((!Query.Trim().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase) || Query.Trim().Contains("EXEC", StringComparison.OrdinalIgnoreCase)) || Query.Count(c => c == ';') > 1)
          {
+            Snackbar.Add("Only single SELECT queries are allowed. You can however copy the SQL and run it in a different tool, for example Azure Data Studio", Severity.Error);
             return;
-         }
-         Connections = DatabaseService.GetAIConnections();
-         ActiveConnection = Connections.FirstOrDefault(c => c.Name == ActiveConnection.Name);
-         if (ActiveConnection == null)
-         {
-            Snackbar.Add("Please select a database connection first.", Severity.Error);
-            return;
-         }
-         if (ActiveConnection.ConnectionString.Contains("User ID") && ActiveConnection.ConnectionString.Contains("Password"))
-         {
-            if (!string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password))
-            {
-               ActiveConnection.ConnectionString = ActiveConnection.ConnectionString.Replace("User ID=;", $"User ID={Username};");
-               ActiveConnection.ConnectionString = ActiveConnection.ConnectionString.Replace("Password=;", $"Password={Password};");
-            }
-            else if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
-            {
-               Snackbar.Add("Please enter a username and password.", Severity.Error);
-               return;
-            }
          }
          RowData = DatabaseService.GetDataTable(ActiveConnection, Query);
          Snackbar.Add("Results updated.", Severity.Success);
@@ -129,17 +107,6 @@ namespace DBChatPro.Components.Pages
          {
             mudResultTabs.ActivatePanel(0);
          }
-      }
-
-      private bool MakeSureSelectQueryOnly(string query)
-      {
-         if ((!Query.Trim().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase) && Query.Trim().Contains("EXEC", StringComparison.OrdinalIgnoreCase)) || Query.Count(c => c == ';') > 1)
-         {
-            Snackbar.Add("Only single SELECT queries are allowed. You can however copy the SQL and run it in a different tool, for example Azure Data Studio", Severity.Error);
-            return false;
-         }
-         return true;
-
       }
 
       public void LoadDatabase(string dbName)
@@ -190,7 +157,7 @@ namespace DBChatPro.Components.Pages
          try
          {
             Loading = true;
-            LoadingMessage = "Getting the AI SQL Server query please stand by...";
+            LoadingMessage = "Getting the AI query...";
             var aiResponse = await OpenAIService.GetAISQLQuery(Prompt, ActiveConnection);
 
             if (aiResponse.query != null)

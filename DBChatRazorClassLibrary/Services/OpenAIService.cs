@@ -1,38 +1,32 @@
 ﻿using System;
-using System.ClientModel;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
-using Azure;
-using Azure.AI.OpenAI;
+using OpenAI.Chat;
 namespace DBChatPro.Services
 {
    public class OpenAIService
    {
       private static readonly HttpClient httpClient = new HttpClient();
-      private static readonly Azure.AI.OpenAI.AzureOpenAIClient openAIClient;
       static OpenAIService()
       {
-         string apiKey = Constants.OpenAIAPIKEY;
-         string endpoint = "https://openai-packtex.openai.azure.com/";
+         // httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
+         // Configure HttpClient to include your OpenAI API key in each request
+         // string openAIKey = "sk-?";
 
-         httpClient.BaseAddress = new Uri(endpoint);
-         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-         var credential = new AzureKeyCredential(apiKey);
-         openAIClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+         //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", openAIKey);
       }
+
       public static async Task<AIQuery> GetAISQLQuery(string userPrompt, AIConnection aiConnection)
       {
-         // System.ClientModel.ApiKeyCredential apiKeyCredential = new System.ClientModel.ApiKeyCredential(Constants.OpenAIAPIKEY);
-         // var openAI = new ChatClient("gpt-4o", apiKeyCredential);
+         System.ClientModel.ApiKeyCredential apiKeyCredential = new System.ClientModel.ApiKeyCredential(Constants.OpenAIAPIKEY);
+         var openAI = new ChatClient("gpt-4o", apiKeyCredential);
 
          string prompt = BuildPrompt(userPrompt, aiConnection);
-
-         var response = await openAIClient.GetChatClient("gpt-4o").CompleteChatAsync(prompt);
+         var response = await openAI.CompleteChatAsync(prompt);
          var responseContent = response.Value.Content[0].Text.Replace("```json", "").Replace("```", "").Replace("\\n", "");
 
          try
