@@ -125,20 +125,6 @@ namespace DBChatPro
             return results.ToString();
         }
 
-        public static List<TableSchema> GetSchema()
-        {
-            var schema = File.ReadAllText("Schema.txt");
-            var result = JsonSerializer.Deserialize<List<TableSchema>>(schema);
-            if (result != null)
-            {
-                return result;
-            }
-            else
-            {
-                return new List<TableSchema>();
-            }
-        }
-
         public static List<AIConnection> GetAIConnections()
         {
             try

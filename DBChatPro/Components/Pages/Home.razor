@@ -198,10 +198,10 @@
 
                            @foreach (var item in History)
                            {
-                              @if (item != null && item.Query != null && item.Name != null)
+                              @if (item != null && item.Query != null && item.Prompt != null)
                               {
                                  <MudList Clickable="true">
-                                    <MudListItem OnClick="() => LoadHistoryItem(item.Name)" Text="@item.Name" />
+                                    <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
                                  </MudList>
                               }
                            }
@@ -221,10 +221,10 @@
 
                            @foreach (var item in Favorites)
                            {
-                              @if (item != null && item.Query != null && item.Name != null)
+                              @if (item != null && item.Prompt != null)
                               {
                                  <MudList Clickable="true">
-                                    <MudListItem OnClick="() => LoadHistoryItem(item.Query)" Text="@item.Name" />
+                                    <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
                                  </MudList>
                               }
                            }
