@@ -121,7 +121,6 @@ namespace DBChatPro
                     }
                 }
             }
-
             return results.ToString();
         }
 

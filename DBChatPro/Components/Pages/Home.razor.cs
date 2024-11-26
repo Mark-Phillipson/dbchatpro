@@ -264,8 +264,23 @@ namespace DBChatPro.Components.Pages
          await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Query);
          Snackbar.Add("Query copied to clipboard!", Severity.Success);
       }
-      private void HandleInput(ChangeEventArgs e)
+      private async Task ExportToCsv()
       {
+         if (RowData == null || RowData.Count == 0)
+         {
+            Snackbar.Add("No data to export.", Severity.Error);
+            return;
+         }
+         var csv = new StringBuilder();
+         foreach (var row in RowData!)
+         {
+            csv.AppendLine(string.Join(",", row));
+         }
+
+         var csvContent = csv.ToString();
+         var bytes = Encoding.UTF8.GetBytes(csvContent);
+         var base64 = Convert.ToBase64String(bytes);
+         await JSRuntime.InvokeVoidAsync("downloadFile", "ResultExport.csv", base64);
       }
       private async Task HandleKeyDown(KeyboardEventArgs e)
       {
