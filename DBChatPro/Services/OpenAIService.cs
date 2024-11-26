@@ -9,48 +9,74 @@ using Microsoft.VisualBasic;
 using Azure;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.Configuration;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+
 namespace DBChatPro.Services
 {
    public class OpenAIService
    {
       private static readonly HttpClient httpClient = new HttpClient();
-      private static readonly Azure.AI.OpenAI.AzureOpenAIClient openAIClient;
+      private static readonly bool useAzureOpenAI;
+      private static readonly IChatCompletionService? chatService;
       static OpenAIService()
       {
          var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
+            .AddJsonFile("appsettings.json")
+            .Build();
+         string model = "gpt-4o-mini";
+         string machineName = Environment.MachineName;
+         useAzureOpenAI = !machineName.Equals("J40L4V3", StringComparison.OrdinalIgnoreCase);
 
-         string? apiKey = configuration["AzureOpenAI:ApiKey"];
-
-         string endpoint = "https://openai-packtex.openai.azure.com/";
-
-         httpClient.BaseAddress = new Uri(endpoint);
-         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-         if (apiKey != null)
+         if (useAzureOpenAI)
          {
-            var credential = new AzureKeyCredential(apiKey);
-            openAIClient = new AzureOpenAIClient(new Uri(endpoint), credential);
+            string? apiKey = configuration["AzureOpenAI:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+               throw new ArgumentNullException(nameof(apiKey), "API key cannot be null or empty.");
+            }
+            string? endpoint = configuration["AzureOpenAI:Endpoint"];
+            if (string.IsNullOrEmpty(endpoint))
+            {
+               throw new ArgumentNullException(nameof(endpoint), "Endpoint cannot be null or empty.");
+            }
+
+            chatService = new AzureOpenAIChatCompletionService(model, endpoint, apiKey);
          }
          else
          {
-            throw new Exception("AzureOpenAI:ApiKey is not set in appsettings.json");
+            string? OpenAI_ApiKey = configuration["OpenAIKey"];
+            if (string.IsNullOrEmpty(OpenAI_ApiKey))
+            {
+               throw new ArgumentNullException(nameof(OpenAI_ApiKey), "OpenAI API key cannot be null or empty.");
+            }
+            chatService = new OpenAIChatCompletionService(model, OpenAI_ApiKey);
+         }
+         if (chatService == null)
+         {
+
+            throw new ArgumentNullException(nameof(chatService), "Chat service cannot be null.");
          }
       }
       public static async Task<AIQuery> GetAISQLQuery(string userPrompt, AIConnection aiConnection)
       {
-         // System.ClientModel.ApiKeyCredential apiKeyCredential = new System.ClientModel.ApiKeyCredential(Constants.OpenAIAPIKEY);
-         // var openAI = new ChatClient("gpt-4o", apiKeyCredential);
-
          string prompt = BuildPrompt(userPrompt, aiConnection);
 
-         var response = await openAIClient.GetChatClient("gpt-4o").CompleteChatAsync(prompt);
-         var responseContent = response.Value.Content[0].Text.Replace("```json", "").Replace("```", "").Replace("\\n", "");
+         if (chatService == null)
+         {
+            throw new InvalidOperationException("Chat service is not initialized.");
+         }
+         IReadOnlyList<ChatMessageContent> response = await chatService.GetChatMessageContentsAsync(prompt);
+         ChatMessageContent? chatMessageContent = response.FirstOrDefault();
+         string? responseContent = chatMessageContent?.Content;
+         responseContent = responseContent?.Replace("```json", "").Replace("```", "").Replace("\\n", "");
 
          try
          {
-            var results = JsonSerializer.Deserialize<AIQuery>(responseContent);
+            var results = JsonSerializer.Deserialize<AIQuery>(responseContent ?? string.Empty);
             if (results != null)
             {
                return results;
@@ -62,7 +88,7 @@ namespace DBChatPro.Services
          }
          catch (Exception exception)
          {
-            throw new Exception("Failed to parse AI response as a SQL Query. The AI response was: " + response.Value.Content[0].Text + " The error was: " + exception.Message);
+            throw new Exception("Failed to parse AI response as a SQL Query. The AI response was: " + responseContent + " The error was: " + exception.Message);
          }
       }
 

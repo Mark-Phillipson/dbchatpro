@@ -26,12 +26,6 @@
          <MudItem xs="12">
             <div style="float: right">
                <div style="display: flex; align-items: center;">
-                  @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
-                  {
-                     <MudTextField Label="Username" @bind-Value="@Username" Variant="Variant.Text" Class="mx-2" />
-                     <MudTextField InputType="InputType.Password" Label="Password" @bind-Value="@Password"
-                        Variant="Variant.Text" Class="mx-2" />
-                  }
                   <MudCheckBox accesskey="s" @bind-Value="@showResultsOnly" Label="Show Results Only (Alt+S)"
                      Class="mx-2" />
                   <MudIconButton OnClick="@(() => ToggleDrawer(Anchor.End))" Icon="@Icons.Material.Filled.Menu"
@@ -61,7 +55,8 @@
                            <MudTextField
                               Placeholder='Type a Question; for example how many addresses in the addresses table are for the London area?'
                               id='prompt' AutoFocus="true" AutoGrow="true" @bind-Value="FmModel.Prompt" T="string"
-                              Label="Your prompt (Alt+q)" Variant="Variant.Text" Lines="5" accesskey="q" />
+                              Label="Your prompt (Alt+Q)" Variant="Variant.Text" Lines="5" accesskey="q" 
+                              @onkeydown="HandleKeyDown" @oninput="HandleInput" Immediate="true"/>
                         </div>
                         @if (Loading)
                         {
@@ -78,33 +73,49 @@
                      </EditForm>
                      <MudTextField Class="mono-font" @bind-Value="@Query" Text="@Query" T="string"
                         Label="Edit generated query" Variant="Variant.Text" Lines="5" />
-                     <MudButton accesskey="y" @onclick="CopyToClipboard" Class="mx-1 my-6" Variant="Variant.Filled"
-                        Color="Color.Primary">Cop<u>y</u></MudButton>
-                     @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
-                     {
-                        @if (!string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password))
-                        {
-                           <MudButton accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
-                              Color="Color.Primary">E<u>x</u>ecute
-                           </MudButton>
-                        }
-                        else
-                        {
-                           <MudAlert Severity="Severity.Error" Class="my-6">Please enter a username and password.</MudAlert>
-                           <MudButton Disabled="true" accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6"
-                              Variant="Variant.Filled" Color="Color.Primary">E<u>x</u>ecute
-                           </MudButton>
-                        }
-                     }
-                     else
-                     {
-                        <MudButton accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
-                           Color="Color.Primary">E<u>x</u>ecute
-                        </MudButton>
-                     }
+                     <MudGrid>
+                        <MudItem md="6">
+                           @FmModel?.Prompt
+                           <MudButton accesskey="y" @onclick="CopyToClipboard" Class="mx-1 my-6" Variant="Variant.Filled"
+                              Color="Color.Primary">Cop<u>y</u></MudButton>
+                           @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
+                           {
+                              @if (!string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password))
+                              {
+                                 <MudButton id='generateButton'  accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
+                                    Color="Color.Primary">E<u>x</u>ecute
+                                 </MudButton>
+                              }
+                              else
+                              {
+                                 <MudButton Disabled="true" Class="my-6" Variant="Variant.Filled" Color="Color.Primary">Please enter
+                                    a
+                                    username and password
+                                 </MudButton>
+                              }
+                           }
+                           else
+                           {
+                              <MudButton id='generateButton'  accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
+                                 Color="Color.Primary">E<u>x</u>ecute
+                              </MudButton>
+                           }
+                        </MudItem>           
+                           @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
+                           {
+                              <MudItem md="3">
+                              <MudTextField Style="display: inline-block;" Label="Username" @bind-Value="@Username" Variant="Variant.Text" Class="my-6" />
+                              </MudItem>
+                              <MudItem md="3">
+                              <MudTextField Style="display: inline-block;" InputType="InputType.Password" Label="Password" @bind-Value="@Password"
+                                 Variant="Variant.Text" Class="my-6" />
+                              </MudItem>
+                           }
+                        
+                     </MudGrid>
                      @if (!string.IsNullOrEmpty(Error))
                      {
-                        <p Class="my-6"><b>Error:</b> @Error</p>
+                        <MudAlert Severity="Severity.Error" Class="my-6">@Error</MudAlert>
                      }
                   </MudItem>
                   <MudItem xs="4">
@@ -225,6 +236,7 @@
                               {
                                  <MudList Clickable="true">
                                     <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteFavoriteItem(item.Id)" />
                                  </MudList>
                               }
                            }

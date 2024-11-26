@@ -58,5 +58,15 @@ namespace DBChatPro
             }
             return new List<HistoryItem>();
         }
+
+        internal static void DeleteFavoriteItem(int id)
+        {
+            var favorite = Favorites.FirstOrDefault(x => x.Id == id);
+            if (favorite != null)
+            {
+                Favorites.Remove(favorite);
+                SaveFavoritesToFile(Favorites);
+            }
+        }
     }
 }

@@ -10,12 +10,13 @@ using DBChatPro;
 using MudBlazor;
 using DBChatPro.Services;
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace DBChatPro.Components.Pages
 {
    public partial class Home : ComponentBase
    {
-      private string defaultConnectionName = "Packtex Live";
+      private string defaultConnectionName = "VoiceAdmin";
       [Inject] public required IJSRuntime JSRuntime { get; set; }
       // Table styling
       private bool dense = false;
@@ -29,7 +30,6 @@ namespace DBChatPro.Components.Pages
       public string Password { get; set; } = "";
       // Form data
       public FormModel FmModel { get; set; } = new FormModel();
-
       // General UI data
       private bool Loading = false;
       private string LoadingMessage = String.Empty;
@@ -123,7 +123,9 @@ namespace DBChatPro.Components.Pages
                return;
             }
          }
+         Loading = true;
          RowData = DatabaseService.GetDataTable(ActiveConnection, Query);
+         Loading = false;
          Snackbar.Add("Results updated.", Severity.Success);
          if (mudResultTabs != null)
          {
@@ -174,9 +176,25 @@ namespace DBChatPro.Components.Pages
          FmModel.Prompt = prompt;
          await GenerateSQLQueryFromPrompt(prompt);
       }
-
+      private void DeleteFavoriteItem(int id)
+      {
+         if (ActiveConnection == null)
+         {
+            Snackbar.Add("Please select a database connection first.", Severity.Error);
+            return;
+         }
+         HistoryService.DeleteFavoriteItem(id);
+         Favorites = HistoryService.GetFavorites(ActiveConnection.Name ?? "Name Undefined");
+         Snackbar.Add("Favorite item deleted!", Severity.Success);
+      }
       public async Task OnSubmit()
       {
+         if (string.IsNullOrWhiteSpace(FmModel.Prompt))
+         {
+            Snackbar.Add("Please enter a prompt.", Severity.Error);
+            return;
+         }
+         StateHasChanged();
          await GenerateSQLQueryFromPrompt(FmModel.Prompt);
       }
 
@@ -211,6 +229,8 @@ namespace DBChatPro.Components.Pages
                mudResultTabs.ActivatePanel(1);
             }
             StateHasChanged();
+            // Move the focus to the generate button
+            await JSRuntime.InvokeVoidAsync("focusElement", "generateButton");
          }
          catch (Exception e)
          {
@@ -243,6 +263,16 @@ namespace DBChatPro.Components.Pages
       {
          await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Query);
          Snackbar.Add("Query copied to clipboard!", Severity.Success);
+      }
+      private void HandleInput(ChangeEventArgs e)
+      {
+      }
+      private async Task HandleKeyDown(KeyboardEventArgs e)
+      {
+         if (e.Key == "Enter")
+         {
+            await OnSubmit();
+         }
       }
    }
 }

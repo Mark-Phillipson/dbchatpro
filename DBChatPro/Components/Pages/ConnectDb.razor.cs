@@ -118,7 +118,10 @@ ORDER BY o.Name";
                         {
                             var table = reader.GetValue(0).ToString();
                             var column = reader.GetValue(1).ToString();
-                            if (table != null && column != null) { rows.Add(new KeyValuePair<string, string>(table, column)); }
+                            if (table != null && column != null)
+                            {
+                                rows.Add(new KeyValuePair<string, string>(table, column));
+                            }
                         }
                     }
                 }
@@ -128,8 +131,10 @@ ORDER BY o.Name";
 
             foreach (var group in groups)
             {
-                aiCon.SchemaStructured.Add(new TableSchema() { TableName = group.Key, Columns = group.Select(x => x.Value).ToList() });
-                //use this list
+                if (!group.Key.Contains(".aspnet", StringComparison.OrdinalIgnoreCase))
+                {
+                    aiCon.SchemaStructured.Add(new TableSchema() { TableName = group.Key, Columns = group.Select(x => x.Value).ToList() });
+                }
             }
 
             var textLines = new List<string>();
