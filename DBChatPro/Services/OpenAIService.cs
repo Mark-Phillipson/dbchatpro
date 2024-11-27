@@ -27,7 +27,7 @@ namespace DBChatPro.Services
          var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
-         string model = "gpt-4o-mini";
+         string model = "gpt-4o";
          string machineName = Environment.MachineName;
          useAzureOpenAI = !machineName.Equals("J40L4V3", StringComparison.OrdinalIgnoreCase);
 
@@ -43,7 +43,11 @@ namespace DBChatPro.Services
             {
                throw new ArgumentNullException(nameof(endpoint), "Endpoint cannot be null or empty.");
             }
-
+            model = configuration["AzureOpenAI:DeploymentName"] ?? model;
+            if (string.IsNullOrEmpty(model))
+            {
+               throw new ArgumentNullException(nameof(model), "Deployment name cannot be null or empty.");
+            }
             chatService = new AzureOpenAIChatCompletionService(model, endpoint, apiKey);
          }
          else

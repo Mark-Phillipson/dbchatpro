@@ -63,6 +63,10 @@ namespace DBChatPro.Components.Pages
          if (Connections != null && Connections.Count > 0)
          {
             var connection = Connections.FirstOrDefault(c => c.Name == defaultConnectionName);
+            if (connection == null)
+            {
+               connection = Connections.FirstOrDefault();
+            }
             if (connection != null)
             {
                ActiveConnection = connection;
