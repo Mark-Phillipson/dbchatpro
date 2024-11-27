@@ -28,12 +28,23 @@
                     </div>
                     <MudCard>
                         <MudCardContent>
-                            <MudTextField @bind-Value="Connection.Name" T="string" Label="Connection Name"
+                            <MudInputLabel ForId="ConnectionName">Connection Name</MudInputLabel>
+                            <MudTextField id='ConnectionName' @bind-Value="Connection.Name" T="string"
                                 Variant="Variant.Text" />
-                            <MudTextField @bind-Value="Connection.ConnectionString" T="string" Label="Connection string"
+
+                            <MudInputLabel ForId="ConnectionString">Connection String</MudInputLabel>
+                            <MudTextField id='ConnectionString' @bind-Value="Connection.ConnectionString" T="string"
                                 Variant="Variant.Text" Lines="5" />
-                            <MudTextField Label="Username" @bind-Value="@Username" Variant="Variant.Text" Class="mx-2" />
-                            <MudTextField InputType="InputType.Password" Label="Password" @bind-Value="@Password"
+
+                            <MudInputLabel ForId="ExtraInformation">Extra Information</MudInputLabel>
+                            <MudTextField id='ExtraInformation' @bind-Value="Connection.ExtraInformation" T="string" Label="
+                            For example a table that is also known by other names." Variant="Variant.Text" Lines="5" />
+
+                            <MudInputLabel ForId="Username">Username</MudInputLabel>
+                            <MudTextField id='Username' @bind-Value="@Username" Variant="Variant.Text" Class="mx-2" />
+
+                            <MudInputLabel ForId="Password">Password</MudInputLabel>
+                            <MudTextField id='Password' InputType="InputType.Password" @bind-Value="@Password"
                                 Variant="Variant.Text" Class="mx-2" />
 
                         </MudCardContent>

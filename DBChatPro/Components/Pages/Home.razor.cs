@@ -26,6 +26,7 @@ namespace DBChatPro.Components.Pages
       private bool bordered = true;
       // Webpage Settings
       private bool showResultsOnly = false;
+      private bool IncludeLatestError = false;
       public string Username { get; set; } = "";
       public string Password { get; set; } = "";
       // Form data
@@ -98,6 +99,8 @@ namespace DBChatPro.Components.Pages
             Snackbar.Add("Please select a database connection first.", Severity.Error);
             return;
          }
+         // Query = $"Break Query {Query}";
+         Error = String.Empty;
          bool isSelectOnly = MakeSureSelectQueryOnly(Query);
          if (!isSelectOnly)
          {
@@ -125,6 +128,20 @@ namespace DBChatPro.Components.Pages
          }
          Loading = true;
          RowData = DatabaseService.GetDataTable(ActiveConnection, Query);
+         if (RowData != null && RowData.Count > 0)
+         {
+            var record = RowData?.FirstOrDefault();
+            string? error = null;
+            if (record != null)
+            {
+               error = record.FirstOrDefault(c => c.Contains("There appears to be a mistake in the SQL statement"));
+            }
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+               Error = error;
+            }
+         }
+
          Loading = false;
          Snackbar.Add("Results updated.", Severity.Success);
          if (mudResultTabs != null)
@@ -194,7 +211,12 @@ namespace DBChatPro.Components.Pages
             Snackbar.Add("Please enter a prompt.", Severity.Error);
             return;
          }
-         StateHasChanged();
+         if (IncludeLatestError && Error != null && Error.Length > 0)
+         {
+            string temporaryPrompt = $"{FmModel.Prompt} {Summary} Note the last time this was run we got this error: {Error}";
+            await GenerateSQLQueryFromPrompt(temporaryPrompt);
+            return;
+         }
          await GenerateSQLQueryFromPrompt(FmModel.Prompt);
       }
 

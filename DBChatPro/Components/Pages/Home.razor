@@ -8,7 +8,7 @@
    <MudGrid Class="my-2">
       @if (Connections.Count == 0)
       {
-         <MudItem xs="6">
+         <MudItem xs="12">
             @if (Environment.MachineName == "J40L4V3")
             {
                <p class="ma-6">You haven't connected a database yet. Visit the <a href="/connect-db">database connection</a>
@@ -32,11 +32,11 @@
                      Color="Color.Inherit" Edge="Edge.Start" />
                </div>
             </div>
-            <MudDivider Class="mb-6"></MudDivider>
+            <MudDivider Class="mb-1"></MudDivider>
             @if (!showResultsOnly)
             {
                <MudGrid>
-                  <MudItem xs="8">
+                  <MudItem xs="12">
                      <p>
                         Selected Database:
                         <MudMenu Label="@ActiveConnection?.Name" EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
@@ -50,210 +50,222 @@
                            }
                         </MudMenu>
                      </p>
-                     <EditForm Class="mb-6" Model="FmModel" OnSubmit="() => OnSubmit()">
-                        <div>
-                           <MudTextField
+                     <EditForm Class="mb-1" Model="FmModel" OnSubmit="() => OnSubmit()">
+                        <MudGrid>
+                           <MudItem md="12">
+                               <MudTextField
                               Placeholder='Type a Question; for example how many addresses in the addresses table are for the London area?'
                               id='prompt' AutoFocus="true" AutoGrow="true" @bind-Value="FmModel.Prompt" T="string"
-                              Label="Your prompt (Alt+Q)" Variant="Variant.Text" Lines="5" accesskey="q" 
-                              @onkeydown="HandleKeyDown" Immediate="true"/>
-                        </div>
-                        @if (Loading)
-                        {
-                           <p Class="my-6">@LoadingMessage
-                              <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
-                           </p>
-                        }
-                        <div>
-                           <MudButton StartIcon="@Icons.Material.Filled.Settings" Class="my-6" Variant="Variant.Filled" ButtonType="ButtonType.Submit"
-                              Color="Color.Primary" accesskey='g'><u>G</u>enerate</MudButton>
-                           <MudButton StartIcon="@Icons.Material.Filled.Clear"  Class="my-6" Variant="Variant.Filled" ButtonType="ButtonType.Button" @onclick="Clear"
-                              Color="Color.Primary" accesskey='c'><u>C</u>lear</MudButton>
-                        </div>
-                     </EditForm>
-                     <MudTextField Class="mono-font" @bind-Value="@Query" Text="@Query" T="string"
-                        Label="Edit generated query" Variant="Variant.Text" Lines="5" />
-                     <MudGrid>
-                        <MudItem md="6">
-                           <MudButton StartIcon="@Icons.Material.Filled.ContentCopy" accesskey="y" @onclick="CopyToClipboard" Class="mx-1 my-6" Variant="Variant.Filled"
-                              Color="Color.Primary">Cop<u>y</u></MudButton>
+                              Label="Your prompt (Alt+Q)" Variant="Variant.Text" Lines="2" accesskey="q"
+                              @onkeydown="HandleKeyDown" Immediate="true" />
+                              @if (Loading)
+                              {
+                              <p Class="my-1">@LoadingMessage
+                                 <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                              </p>
+                              }
+                           </MudItem>
+                           <MudItem md="2">
+                           <MudButton StartIcon="@Icons.Material.Filled.Settings" Class="my-1" Variant="Variant.Filled"
+                              ButtonType="ButtonType.Submit" Color="Color.Primary" accesskey='g'><u>G</u>enerate</MudButton>
+                           </MudItem>
+                           <MudItem md="3">
+                           @if (!string.IsNullOrWhiteSpace(Summary) && !string.IsNullOrWhiteSpace(Error))
+                              {
+                                 <MudCheckBox Label="Include latest error" @bind-Value="@IncludeLatestError" Class="mx-2" />
+                              }
+                           </MudItem>
+                           <MudItem md="7">
+                           <MudButton StartIcon="@Icons.Material.Filled.Clear" Class="my-1" Variant="Variant.Filled"
+                              ButtonType="ButtonType.Button" @onclick="Clear" Color="Color.Primary" accesskey='c'><u>C</u>lear
+                           </MudButton>
+                  </MudItem>
+               </MudGrid>
+               </EditForm>
+               <MudTextField Class="mono-font" @bind-Value="@Query" Text="@Query" T="string" Label="Edit generated query"
+                  Lines="2" />
+               <MudGrid>
+                  <MudItem md="12">
+                     <MudButton StartIcon="@Icons.Material.Filled.ContentCopy" accesskey="y" @onclick="CopyToClipboard"
+                        Class="mx-1 my-1" Variant="Variant.Filled" Color="Color.Primary">Cop<u>y</u></MudButton>
                            @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
                            {
                               @if (!string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password))
                               {
-                                 <MudButton StartIcon="@Icons.Material.Filled.PriorityHigh" id='generateButton'  accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
-                                    Color="Color.Primary">E<u>x</u>ecute
-                                 </MudButton>
+                           <MudButton StartIcon="@Icons.Material.Filled.PriorityHigh" id='executeButton' accesskey="x"
+                              @onclick="ExecuteDatabaseQuery" Class="my-1" Variant="Variant.Filled" Color="Color.Primary">
+                              E<u>x</u>ecute
+                           </MudButton>
                               }
                               else
                               {
-                                 <MudButton Disabled="true" Class="my-6" Variant="Variant.Filled" Color="Color.Primary">Please enter
-                                    a
-                                    username and password
-                                 </MudButton>
+                           <MudButton Disabled="true" Class="my-1" Variant="Variant.Filled" Color="Color.Primary">Please enter
+                              a username and password
+                           </MudButton>
                               }
                            }
                            else
                            {
-                              <MudButton StartIcon="@Icons.Material.Filled.PriorityHigh" id='generateButton'  accesskey="x" @onclick="ExecuteDatabaseQuery" Class="my-6" Variant="Variant.Filled"
-                                 Color="Color.Primary">E<u>x</u>ecute
-                              </MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.PriorityHigh" id='generateButton' accesskey="x"
+                           @onclick="ExecuteDatabaseQuery" Class="my-1" Variant="Variant.Filled" Color="Color.Primary">
+                           E<u>x</u>ecute
+                        </MudButton>
                            }
-                        </MudItem>           
-                           @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
-                           {
-                              <MudItem md="3">
-                              <MudTextField Style="display: inline-block;" Label="Username" @bind-Value="@Username" Variant="Variant.Text" Class="my-6" />
-                              </MudItem>
-                              <MudItem md="3">
-                              <MudTextField Style="display: inline-block;" InputType="InputType.Password" Label="Password" @bind-Value="@Password"
-                                 Variant="Variant.Text" Class="my-6" />
-                              </MudItem>
-                           }
-                        
-                     </MudGrid>
+                  </MudItem>
+                        @if (ActiveConnection != null && ActiveConnection.ConnectionString.ToLower().Contains("password"))
+                        {
+                     <MudItem md="3">
+                        <MudTextField Style="display: inline-block;" Label="Username" @bind-Value="@Username"
+                           Variant="Variant.Text" Class="my-1" />
+                     </MudItem>
+                     <MudItem md="3">
+                        <MudTextField Style="display: inline-block;" InputType="InputType.Password" Label="Password"
+                           @bind-Value="@Password" Variant="Variant.Text" Class="my-1" />
+                     </MudItem>
+                        }
+
+               </MudGrid>
                      @if (!string.IsNullOrEmpty(Error))
                      {
-                        <MudAlert Severity="Severity.Error" Class="my-6">@Error</MudAlert>
+                  <MudAlert Severity="Severity.Error" Class="my-1">@Error</MudAlert>
                      }
-                  </MudItem>
-                  <MudItem xs="4">
-                  </MudItem>
-               </MudGrid>
+            </MudItem>
+            <MudItem xs="4">
+            </MudItem>
+         </MudGrid>
             }
-            <MudTabs @ref="mudResultTabs" KeepPanelsAlive="true" Elevation="2" Rounded="true"
-               ApplyEffectsToContainer="true" PanelClass="pa-6">
-               <MudTabPanel Text="Results">
+      <MudTabs @ref="mudResultTabs" KeepPanelsAlive="true" Elevation="2" Rounded="true" ApplyEffectsToContainer="true"
+         PanelClass="pa-6">
+         <MudTabPanel Text="Results">
                   @if (RowData.Count > 0)
                   {
-                     <MudTable SortLabel="Sort By" Items="@RowData.Skip(1)" Dense="@dense" Bordered="@bordered"
-                        Striped="@striped">
-                        <HeaderContent>
+               <MudTable SortLabel="Sort By" Items="@RowData.Skip(1)" Dense="@dense" Bordered="@bordered" Striped="@striped">
+                  <HeaderContent>
                            @if (RowData != null && RowData.First() != null)
                            {
                               @foreach (var item in RowData.First())
                               {
-                                 <MudTh>@item</MudTh>
+                           <MudTh>@item</MudTh>
                               }
                            }
-                        </HeaderContent>
-                        <RowTemplate>
+                  </HeaderContent>
+                  <RowTemplate>
                            @foreach (var item in context)
                            {
-                              <MudTd DataLabel="item">@item</MudTd>
+                        <MudTd DataLabel="item">@item</MudTd>
                            }
-                        </RowTemplate>
-                        <PagerContent>
-                           <MudTablePager />
-                        </PagerContent>
-                     </MudTable>
-                     <div class="d-flex flex-wrap mt-4">
-                     <MudButton StartIcon="@Icons.Material.Filled.Save" Class="mx-2" Color="Color.Primary" Variant="Variant.Filled" OnClick="ExportToCsv">Export to CSV</MudButton>
-                        <MudSwitch @bind-Value="@dense" Color="Color.Secondary">Dense</MudSwitch>
-                        <MudSwitch @bind-Value="@striped" Color="Color.Tertiary">Striped</MudSwitch>
-                        <MudSwitch @bind-Value="@bordered" Color="Color.Warning">Bordered</MudSwitch>
-                        <MudFab @onclick="SaveFavorite" Style="justify-content: flex-end" Color="Color.Secondary"
-                           StartIcon="@Icons.Material.Filled.Favorite" Label="Favorite" />
-                     </div>
+                  </RowTemplate>
+                  <PagerContent>
+                     <MudTablePager />
+                  </PagerContent>
+               </MudTable>
+               <div class="d-flex flex-wrap mt-4">
+                  <MudButton StartIcon="@Icons.Material.Filled.Save" Class="mx-2" Color="Color.Primary"
+                     Variant="Variant.Filled" OnClick="ExportToCsv">Export to CSV</MudButton>
+                  <MudSwitch @bind-Value="@dense" Color="Color.Secondary">Dense</MudSwitch>
+                  <MudSwitch @bind-Value="@striped" Color="Color.Tertiary">Striped</MudSwitch>
+                  <MudSwitch @bind-Value="@bordered" Color="Color.Warning">Bordered</MudSwitch>
+                  <MudFab @onclick="SaveFavorite" Style="justify-content: flex-end" Color="Color.Secondary"
+                     StartIcon="@Icons.Material.Filled.Favorite" Label="Favorite" />
+               </div>
                   }
                   else
                   {
-                     <p>No data to show.</p>
+               <p>No data to show.</p>
                   }
-               </MudTabPanel>
-               <MudTabPanel Text="Insights">
+         </MudTabPanel>
+         <MudTabPanel Text="Insights">
                   @if (!string.IsNullOrEmpty(Summary))
                   {
-                     <p Class="my-6">@Summary</p>
+               <p Class="my-1">@Summary</p>
                   }
-               </MudTabPanel>
-            </MudTabs>
-         </MudItem>
+         </MudTabPanel>
+      </MudTabs>
+      </MudItem>
 
          // Right column tabs
-         <MudItem xs="4">
-            <MudDrawer Open="@open" Anchor="Anchor.Right" ClipMode="DrawerClipMode.Always" Elevation="1"
-               Breakpoint="Breakpoint.SmAndUp" Width="25%" Variant="@DrawerVariant.Persistent">
-               <MudTabs KeepPanelsAlive="true" Elevation="2" Rounded="true" ApplyEffectsToContainer="true"
-                  PanelClass="pa-6">
-                  <MudTabPanel Text="Schema">
+      <MudItem xs="4">
+         <MudDrawer Open="@open" Anchor="Anchor.Right" ClipMode="DrawerClipMode.Always" Elevation="1"
+            Breakpoint="Breakpoint.SmAndUp" Width="25%" Variant="@DrawerVariant.Persistent">
+            <MudTabs KeepPanelsAlive="true" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+               <MudTabPanel Text="Schema">
                      @if (ActiveConnection?.Name != null)
                      {
-                        <p class="ml-6 mb-6">Browse the tables and columns for <b>@ActiveConnection.Name</b></p>
+                     <p class="ml-6 mb-1">Browse the tables and columns for <b>@ActiveConnection.Name</b></p>
                      }
-                     <MudTextField accesskey="t" Label="Filter Tables (Alt+T)" Id="filterText" Name="filterText"
-                        Placeholder="Filter on Blur" @bind-Value="@filterText" @onblur='@FilterTables' />
-                     <MudTreeView T="string">
+                  <MudTextField accesskey="t" Label="Filter Tables (Alt+T)" Id="filterText" Name="filterText"
+                     Placeholder="Filter (Tab to Apply)" @bind-Value="@filterText" @onblur='@FilterTables' />
+                  <MudTreeView T="string">
                         @if (ActiveConnection != null && ActiveConnection.SchemaStructured != null)
                         {
                            @foreach (var table in ActiveConnection.SchemaStructured)
                            {
                               @if (table != null && table.TableName != null && table.Columns != null)
                               {
-                                 <MudTreeViewItem Value="@table.TableName">
+                              <MudTreeViewItem Value="@table.TableName">
                                     @foreach (var col in table.Columns)
                                     {
                                        <MudTreeViewItem Value="@col" />
                                     }
-                                 </MudTreeViewItem>
+                              </MudTreeViewItem>
                               }
                            }
                         }
-                     </MudTreeView>
-                  </MudTabPanel>
-                  <MudTabPanel Text="History">
+                  </MudTreeView>
+               </MudTabPanel>
+               <MudTabPanel Text="History">
                      @if (History.Count > 0 && ActiveConnection != null)
                      {
-                        <p class="mb-6">Query history for <b>@ActiveConnection.Name</b></p>
-                        <MudPaper>
+                     <p class="mb-1">Query history for <b>@ActiveConnection.Name</b></p>
+                     <MudPaper>
 
                            @foreach (var item in History)
                            {
                               @if (item != null && item.Query != null && item.Prompt != null)
                               {
-                                 <MudList Clickable="true">
-                                    <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
-                                 </MudList>
+                              <MudList Clickable="true">
+                                 <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
+                              </MudList>
                               }
                            }
-                        </MudPaper>
+                     </MudPaper>
 
                      }
                      else
                      {
-                        <p class="mb-6">You haven't run any prompts yet.</p>
+                     <p class="mb-1">You haven't run any prompts yet.</p>
                      }
-                  </MudTabPanel>
-                  <MudTabPanel Text="Favorites">
+               </MudTabPanel>
+               <MudTabPanel Text="Favorites">
                      @if (Favorites.Count > 0 && ActiveConnection != null)
                      {
-                        <p class="mb-6">Your saved queries for <b>@ActiveConnection.Name</b></p>
-                        <MudPaper>
+                     <p class="mb-1">Your saved queries for <b>@ActiveConnection.Name</b></p>
+                     <MudPaper>
 
                            @foreach (var item in Favorites)
                            {
                               @if (item != null && item.Prompt != null)
                               {
-                                 <MudList Clickable="true">
-                                    <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteFavoriteItem(item.Id)" />
-                                 </MudList>
+                              <MudList Clickable="true">
+                                 <MudListItem OnClick="() => LoadHistoryItem(item.Prompt)" Text="@item.Prompt" />
+                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="() => DeleteFavoriteItem(item.Id)" />
+                              </MudList>
                               }
                            }
-                        </MudPaper>
+                     </MudPaper>
 
                      }
                      else
                      {
                         @if (ActiveConnection != null)
                         {
-                           <p class="mb-6">You haven't saved any favorites for <b>@ActiveConnection.Name</b> yet.</p>
+                        <p class="mb-1">You haven't saved any favorites for <b>@ActiveConnection.Name</b> yet.</p>
                         }
                      }
-                  </MudTabPanel>
-               </MudTabs>
-            </MudDrawer>
-         </MudItem>
+               </MudTabPanel>
+            </MudTabs>
+         </MudDrawer>
+      </MudItem>
       }
    </MudGrid>
 </MudContainer>

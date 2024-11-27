@@ -120,6 +120,10 @@ namespace DBChatPro.Services
          builder.AppendLine("Do not use MySQL syntax.");
          builder.AppendLine("Always limit the SQL Query to 300 rows for example SELECT TOP(300)");
          builder.AppendLine("Only include pertinent columns of the table in the query.");
+         if (aiConnection.ExtraInformation != null && aiConnection.ExtraInformation.Length > 0)
+         {
+            builder.AppendLine($"Some pertinent information about the database in general; {aiConnection.ExtraInformation}");
+         }
          builder.AppendLine("If the request is to insert update or delete records, still create the query but note it will not be allowed to be executed.");
 
          return builder.ToString();

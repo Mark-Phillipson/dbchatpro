@@ -18,7 +18,7 @@ namespace DBChatPro.Components.Pages
         AIConnection? Connection = null;
         // bool success;
         //private bool Loading = false;
-        AIConnection aiConnection = new() { Name = "New Connection", ConnectionString = "TBC", SchemaStructured = new List<TableSchema>(), SchemaRaw = new List<string>() };
+        AIConnection aiConnection = new() { Name = "", ConnectionString = "", SchemaStructured = new List<TableSchema>(), SchemaRaw = new List<string>() };
         List<AIConnection> ExistingDbs = new List<AIConnection>();
 
         protected override void OnInitialized()
@@ -32,7 +32,7 @@ namespace DBChatPro.Components.Pages
                 System.Console.WriteLine(e.Message);
                 throw;
             }
-            Connection = new AIConnection() { Name = "New Connection", ConnectionString = "TBC", SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
+            Connection = new AIConnection() { Name = "", ConnectionString = "", SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
 
         }
 
@@ -89,9 +89,10 @@ namespace DBChatPro.Components.Pages
         }
         private AIConnection GenerateSchema(AIConnection conn)
         {
-            AIConnection aiCon = new() { Name = "New Connection", ConnectionString = "TBC", SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
+            AIConnection aiCon = new() { Name = "", ConnectionString = "", SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
             aiCon.ConnectionString = conn.ConnectionString;
             aiCon.Name = conn.Name;
+            aiCon.ExtraInformation = conn.ExtraInformation;
             if (aiCon.ConnectionString.Contains("User ID") && aiCon.ConnectionString.Contains("Password"))
             {
                 aiCon.ConnectionString = aiCon.ConnectionString.Replace("User ID=;", $"User ID={Username};");
