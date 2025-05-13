@@ -123,6 +123,45 @@
         {
             Loading = true;
             dbSchema = await dataService.GenerateSchema(aiConnection);
+
+            // Try to get datatypes for each column using the schema's raw info if available
+            foreach (var table in dbSchema.SchemaStructured)
+            {
+                var newColumns = new List<string>();
+                foreach (var col in table.Columns)
+                {
+                    // Try to find the datatype from SchemaRaw (if it contains lines like "TableName.ColumnName DataType")
+                    string? datatype = null;
+                    if (dbSchema.SchemaRaw != null)
+                    {
+                        // Look for a line that starts with "TableName.ColumnName "
+                        var prefix = $"{table.TableName}.{col} ";
+                        var raw = dbSchema.SchemaRaw.FirstOrDefault(r => r.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+                        if (raw != null)
+                        {
+                            // Extract datatype (assume format: TableName.ColumnName DataType)
+                            var parts = raw.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length == 2)
+                                datatype = parts[1];
+                        }
+                    }
+                    // If already in "Name (Type)" format, skip
+                    if (col.Contains("(") && col.Contains(")"))
+                    {
+                        newColumns.Add(col);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(datatype))
+                    {
+                        newColumns.Add($"{col} ({datatype})");
+                    }
+                    else
+                    {
+                        newColumns.Add(col);
+                    }
+                }
+                table.Columns = newColumns;
+            }
+
             Loading = false;
             Error = String.Empty;
         }

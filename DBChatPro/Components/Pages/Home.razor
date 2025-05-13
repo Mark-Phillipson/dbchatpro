@@ -112,9 +112,33 @@
                         {
                             <MudTable SortLabel="Sort By" Items="@(RowData.Skip(1))" Dense="@dense" Bordered="@bordered" Striped="@striped">
                                 <HeaderContent>
-                                    @foreach (var item in (RowData.FirstOrDefault() ?? new List<string>()))
+                                    @for (int i = 0; i < (RowData[0]?.Count ?? 0); i++)
                                     {
-                                        <MudTh>@item</MudTh>
+                                        var fieldName = RowData[0][i];
+                                        // Try to get the table schema for the currently selected table
+                                        TableSchema? tableSchema = dbSchema.SchemaStructured
+                                            .FirstOrDefault(t => t.TableName.Equals(activeDatabase, StringComparison.OrdinalIgnoreCase));
+                                        string? dataType = null;
+                                        if (tableSchema != null && tableSchema.Columns != null)
+                                        {
+                                            // Try to find a column in the schema that matches the field name
+                                            foreach (var col in tableSchema.Columns)
+                                            {
+                                                // If your schema columns are in "Name (Type)" format
+                                                if (col.StartsWith(fieldName + " ("))
+                                                {
+                                                    var start = col.IndexOf('(');
+                                                    var end = col.IndexOf(')');
+                                                    if (start > 0 && end > start)
+                                                    {
+                                                        dataType = col.Substring(start + 1, end - start - 1);
+                                                        break;
+                                                    }
+                                                }
+                                                // If your schema columns are just names, you need to update your schema to include types
+                                            }
+                                        }
+                                        <MudTh>@(dataType != null ? $"{fieldName} ({dataType})" : fieldName)</MudTh>
                                     }
                                 </HeaderContent>
                                 <RowTemplate>
@@ -170,10 +194,43 @@
                                     .Where(t => string.IsNullOrWhiteSpace(tableFilter) || t.TableName.Contains(tableFilter, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     <MudTreeViewItem Value="@table.TableName">
-                                        @foreach (var col in table.Columns
-                                            .Where(c => string.IsNullOrWhiteSpace(columnFilter) || c.Contains(columnFilter, StringComparison.OrdinalIgnoreCase)))
+                                        @if (table.Columns is IEnumerable<object> columns)
                                         {
-                                            <MudTreeViewItem Value="@col" />
+                                            foreach (var colObj in columns)
+                                            {
+                                                // Support both string and (name, type) tuple or object
+                                                if (colObj is string colStr)
+                                                {
+                                                    if (string.IsNullOrWhiteSpace(columnFilter) || colStr.Contains(columnFilter, StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        <MudTreeViewItem Value="@colStr" />
+                                                    }
+                                                }
+                                                else if (colObj is KeyValuePair<string, string> colPair)
+                                                {
+                                                    if (string.IsNullOrWhiteSpace(columnFilter) || colPair.Key.Contains(columnFilter, StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        <MudTreeViewItem Value="@($"{colPair.Key} ({colPair.Value})")" />
+                                                    }
+                                                }
+                                                else if (colObj?.GetType().GetProperty("Name") != null && colObj?.GetType().GetProperty("Type") != null)
+                                                {
+                                                    var name = colObj.GetType().GetProperty("Name")?.GetValue(colObj)?.ToString();
+                                                    var type = colObj.GetType().GetProperty("Type")?.GetValue(colObj)?.ToString();
+                                                    if (!string.IsNullOrWhiteSpace(name) && (string.IsNullOrWhiteSpace(columnFilter) || name.Contains(columnFilter, StringComparison.OrdinalIgnoreCase)))
+                                                    {
+                                                        <MudTreeViewItem Value="@($"{name} ({type})")" />
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            foreach (var col in table.Columns
+                                                .Where(c => string.IsNullOrWhiteSpace(columnFilter) || c.Contains(columnFilter, StringComparison.OrdinalIgnoreCase)))
+                                            {
+                                                <MudTreeViewItem Value="@col" />
+                                            }
                                         }
                                     </MudTreeViewItem>
                                 }
@@ -450,6 +507,30 @@
 
         var stream2 = new DotNetStreamReference(stream: new MemoryStream(byteArray));
         await JS.InvokeVoidAsync("downloadFileFromStream", fileName, stream2);
+    }
+
+    // Helper to get the datatype for a column name from the schema
+    private string? GetColumnType(string columnName)
+    {
+        // Try to find the active table schema by name
+        var table = dbSchema.SchemaStructured?.FirstOrDefault(t => t.TableName == ActiveConnection.Name);
+        if (table != null && table.Columns != null)
+        {
+            // If columns are in "Name (Type)" format, extract type
+            foreach (var col in table.Columns)
+            {
+                // If your columns are stored as "Name (Type)"
+                if (col.StartsWith(columnName + " ("))
+                {
+                    var start = col.IndexOf('(');
+                    var end = col.IndexOf(')');
+                    if (start > 0 && end > start)
+                        return col.Substring(start + 1, end - start - 1);
+                }
+                // If your columns are stored as "Name", and you have a parallel types list, adjust here
+            }
+        }
+        return null;
     }
 }
 

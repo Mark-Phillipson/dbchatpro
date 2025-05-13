@@ -56,17 +56,22 @@ namespace DBChatPro
         public async Task<DatabaseSchema> GenerateSchema(AIConnection conn)
         {
             var dbSchema = new DatabaseSchema() { SchemaRaw = new List<string>(), SchemaStructured = new List<TableSchema>() };
-            List<KeyValuePair<string, string>> rows = new();
+            List<(string TableName, string ColumnName, string DataType)> rows = new();
 
             using (SqlConnection connection = new SqlConnection(conn.ConnectionString))
             {
                 await connection.OpenAsync();
 
-                string sql = @"SELECT SCHEMA_NAME(schema_id) + '.' + o.Name AS 'TableName', c.Name as 'ColumName'
-                FROM     sys.columns c
-                         JOIN sys.objects o ON o.object_id = c.object_id
-                WHERE    o.type = 'U'
-                ORDER BY o.Name";
+                // Get table, column, and datatype
+                string sql = @"
+                SELECT 
+                    SCHEMA_NAME(t.schema_id) + '.' + t.name AS TableName,
+                    c.name AS ColumnName,
+                    ty.name AS DataType
+                FROM sys.tables t
+                INNER JOIN sys.columns c ON t.object_id = c.object_id
+                INNER JOIN sys.types ty ON c.user_type_id = ty.user_type_id
+                ORDER BY t.name, c.column_id";
 
                 using (SqlCommand command = new SqlCommand(sql, connection))
                 {
@@ -74,18 +79,23 @@ namespace DBChatPro
                     {
                         while (await reader.ReadAsync())
                         {
-                            rows.Add(new KeyValuePair<string, string>(reader.GetValue(0).ToString(), reader.GetValue(1).ToString()));
+                            rows.Add((
+                                reader.GetValue(0).ToString(),
+                                reader.GetValue(1).ToString(),
+                                reader.GetValue(2).ToString()
+                            ));
                         }
                     }
                 }
             }
 
-            var groups = rows.GroupBy(x => x.Key);
+            var groups = rows.GroupBy(x => x.TableName);
 
             foreach (var group in groups)
             {
-                dbSchema.SchemaStructured.Add(new TableSchema() { TableName = group.Key, Columns = group.Select(x => x.Value).ToList() });
-                //use this list
+                // Store columns as "ColumnName (DataType)"
+                var columns = group.Select(x => $"{x.ColumnName} ({x.DataType})").ToList();
+                dbSchema.SchemaStructured.Add(new TableSchema() { TableName = group.Key, Columns = columns });
             }
 
             var textLines = new List<string>();
@@ -93,16 +103,12 @@ namespace DBChatPro
             foreach (var table in dbSchema.SchemaStructured)
             {
                 var schemaLine = $"- {table.TableName} (";
-
                 foreach (var column in table.Columns)
                 {
                     schemaLine += column + ", ";
                 }
-
                 schemaLine += ")";
                 schemaLine = schemaLine.Replace(", )", " )");
-
-                Console.WriteLine(schemaLine);
                 textLines.Add(schemaLine);
             }
 
