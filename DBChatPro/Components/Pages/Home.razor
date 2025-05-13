@@ -100,7 +100,9 @@
                         }
                         @if (!string.IsNullOrEmpty(Error))
                         {
-                            <p class="my-6"><b>Error:</b> @Error</p>
+                            <p class="my-6" @onclick="AddErrorToPrompt" style="cursor: pointer; text-decoration: underline dashed; color: #d32f2f;" title="Click to add this error to your prompt">
+                                <b>Error:</b> @Error <MudIcon Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" />
+                            </p>
                         }
                     </MudItem>
                     <MudItem xs="4">
@@ -531,6 +533,12 @@
             }
         }
         return null;
+    }
+
+    private void AddErrorToPrompt()
+    {
+        FmModel.Prompt += $"\n\nPlease try again avoiding this error: {Error}";
+        Snackbar.Add("Error message added to prompt", Severity.Info);
     }
 }
 
