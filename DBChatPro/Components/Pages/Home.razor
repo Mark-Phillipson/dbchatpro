@@ -6,12 +6,22 @@
 @using DBChatPro.Models
 @using Markdig
 @using Microsoft.Extensions.AI
+@using Microsoft.JSInterop
+@using MudBlazor
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+
 @inject ISnackbar Snackbar
-@inject IQueryService queryService
-@inject IConnectionService connectionService
-@inject IDatabaseService dataService
-@inject IConfiguration config
-@inject AIService aiService
+@inject IQueryService QueryService
+@inject IConnectionService ConnectionService
+@inject IDatabaseService DataService
+@inject IConfiguration Config
+@inject AIService AiService
 @inject IJSRuntime JS
 
 <PageTitle>Home</PageTitle>
@@ -50,23 +60,23 @@
                                 <MudSelect @bind-Value="aiPlatform"
                                 Label="AI Platform"
                                 Placeholder="Select AI Platform">
-                                    @if (!string.IsNullOrEmpty(config.GetValue<string>("AZURE_OPENAI_ENDPOINT")))
+                                    @if (!string.IsNullOrEmpty(Config.GetValue<string>("AZURE_OPENAI_ENDPOINT")))
                                     {
                                         <MudSelectItem Value="@("AzureOpenAI")" T="string">Azure OpenAI</MudSelectItem>
                                     }
-                                    @if (!string.IsNullOrEmpty(config.GetValue<string>("OPENAI_KEY")))
+                                    @if (!string.IsNullOrEmpty(Config.GetValue<string>("OPENAI_KEY")))
                                     {
                                         <MudSelectItem Value="@("OpenAI")" T="string">OpenAI</MudSelectItem>
                                     }
-                                    @if (!string.IsNullOrEmpty(config.GetValue<string>("OLLAMA_ENDPOINT")))
+                                    @if (!string.IsNullOrEmpty(Config.GetValue<string>("OLLAMA_ENDPOINT")))
                                     {
                                         <MudSelectItem Value="@("Ollama")" T="string">Ollama</MudSelectItem>
                                     }
-                                    @if (!string.IsNullOrEmpty(config.GetValue<string>("GITHUB_MODELS_KEY")))
+                                    @if (!string.IsNullOrEmpty(Config.GetValue<string>("GITHUB_MODELS_KEY")))
                                     {
                                         <MudSelectItem Value="@("GitHubModels")" T="string">GitHub Models</MudSelectItem>
                                     }
-                                    @if (!string.IsNullOrEmpty(config.GetValue<string>("AWS:Profile")))
+                                    @if (!string.IsNullOrEmpty(Config.GetValue<string>("AWS:Profile")))
                                     {
                                         <MudSelectItem Value="@("AWSBedrock")" T="string">AWS Bedrock</MudSelectItem>
                                     }
@@ -90,7 +100,7 @@
                         }
                         @if (!string.IsNullOrEmpty(Error))
                         {
-                            <p Class="my-6"><b>Error:</b> @Error</p>
+                            <p class="my-6"><b>Error:</b> @Error</p>
                         }
                     </MudItem>
                     <MudItem xs="4">
@@ -98,11 +108,11 @@
                 </MudGrid>
                 <MudTabs KeepPanelsAlive="true" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
                     <MudTabPanel Text="Results">
-                        @if (RowData.Count > 0)
+                        @if (RowData != null && RowData.Count > 1)
                         {
-                            <MudTable SortLabel="Sort By" Items="@RowData.Skip(1)" Dense="@dense" Bordered="@bordered" Striped="@striped">
+                            <MudTable SortLabel="Sort By" Items="@(RowData.Skip(1))" Dense="@dense" Bordered="@bordered" Striped="@striped">
                                 <HeaderContent>
-                                    @foreach (var item in RowData.FirstOrDefault())
+                                    @foreach (var item in (RowData.FirstOrDefault() ?? new List<string>()))
                                     {
                                         <MudTh>@item</MudTh>
                                     }
@@ -118,9 +128,9 @@
                                 </PagerContent>
                             </MudTable>
                             <div class="d-flex flex-wrap mt-4">
-                                <MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
-                                <MudSwitch @bind-Checked="@striped" Color="Color.Tertiary">Striped</MudSwitch>
-                                <MudSwitch @bind-Checked="@bordered" Color="Color.Warning">Bordered</MudSwitch>
+                                <MudSwitch @bind-Value="@dense" Color="Color.Secondary">Dense</MudSwitch>
+                                <MudSwitch @bind-Value="@striped" Color="Color.Tertiary">Striped</MudSwitch>
+                                <MudSwitch @bind-Value="@bordered" Color="Color.Warning">Bordered</MudSwitch>
                                 <MudFab @onclick="SaveFavorite" Style="justify-content: flex-end" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Favorite" Label="Favorite" />
                                 <MudButton @onclick="ExportData" Class="mx-6" Variant="Variant.Filled" Color="Color.Info">Export Data</MudButton>
                             </div>
@@ -132,7 +142,7 @@
                     </MudTabPanel>
                     <MudTabPanel Text="SQL Editor">
                         <div>
-                            <MudTextField @bind-Value="@Query" Text="@Query" T="string" Label="Edit generated query" Variant="Variant.Text" Lines="5" />
+                            <MudTextField @bind-Value="@Query" T="string" Label="Edit generated query" Variant="Variant.Text" Lines="5" />
                         </div>
                         <div>
                             <MudButton @onclick="EditQuery" Class="my-6" Variant="Variant.Filled" Color="Color.Primary">Execute</MudButton>
@@ -141,7 +151,7 @@
                     <MudTabPanel Text="Insights">
                         @if (!string.IsNullOrEmpty(Summary))
                         {
-                            <p Class="my-6">@Summary</p>
+                            <p class="my-6">@Summary</p>
                         }
                     </MudTabPanel>
                 </MudTabs>
@@ -153,11 +163,15 @@
                     <MudTabs KeepPanelsAlive="true" Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
                         <MudTabPanel Text="Schema">
                             <p class="mb-6">Browse the tables and columns for <b>@ActiveConnection.Name</b></p>
+                            <MudTextField @bind-Value="tableFilter" Label="Filter tables" Variant="Variant.Outlined" Class="mb-2" />
+                            <MudTextField @bind-Value="columnFilter" Label="Filter columns" Variant="Variant.Outlined" Class="mb-4" />
                             <MudTreeView T="string">
-                                @foreach (var table in dbSchema.SchemaStructured)
+                                @foreach (var table in dbSchema.SchemaStructured
+                                    .Where(t => string.IsNullOrWhiteSpace(tableFilter) || t.TableName.Contains(tableFilter, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     <MudTreeViewItem Value="@table.TableName">
-                                        @foreach (var col in table.Columns)
+                                        @foreach (var col in table.Columns
+                                            .Where(c => string.IsNullOrWhiteSpace(columnFilter) || c.Contains(columnFilter, StringComparison.OrdinalIgnoreCase)))
                                         {
                                             <MudTreeViewItem Value="@col" />
                                         }
@@ -166,7 +180,7 @@
                             </MudTreeView>
                         </MudTabPanel>
                         <MudTabPanel class="chat-drawer" Text="Chat">
-                            @if (string.IsNullOrEmpty(config.GetValue<string>("Ollama_ENDPOINT")))
+                            @if (string.IsNullOrEmpty(Config.GetValue<string>("Ollama_ENDPOINT")))
                             {
                                 <p class="mb-6">Ask the AI model for insights about the query result.</p>
                                 @foreach (var item in ChatHistory)
@@ -260,11 +274,9 @@
     </MudGrid>
 </MudContainer>
 
-
 @code {
     // Table styling
     private bool dense = false;
-    private bool hover = true;
     private bool striped = true;
     private bool bordered = true;
 
@@ -295,6 +307,10 @@
     private string Query = String.Empty;
     private string Error = String.Empty;
 
+    // Filtering properties for schema
+    private string tableFilter = "";
+    private string columnFilter = "";
+
     // UI Drawer stuff
     bool open = true;
     Anchor anchor;
@@ -306,19 +322,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Connections = await connectionService.GetAIConnections();
-        if (Connections.Count > 0)
+        Connections = await ConnectionService.GetAIConnections();
+        if (Connections != null && Connections.Count > 0)
         {
-            ActiveConnection = Connections.FirstOrDefault();
+            ActiveConnection = Connections.FirstOrDefault() ?? new AIConnection();
             activeDatabase = ActiveConnection.Name;
-            dbSchema = await dataService.GenerateSchema(ActiveConnection);
+            dbSchema = await DataService.GenerateSchema(ActiveConnection);
         }
         else
         {
             ActiveConnection = new AIConnection();
         }
-        History = await queryService.GetQueries(ActiveConnection.Name, QueryType.History);
-        Favorites = await queryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
+        History = await QueryService.GetQueries(ActiveConnection.Name ?? string.Empty, QueryType.History);
+        Favorites = await QueryService.GetQueries(ActiveConnection.Name ?? string.Empty, QueryType.Favorite);
         if (Environment.MachineName=="J40L4V3") { 
             aiPlatform="OpenAI";
             aiModel="gpt-4o";
@@ -327,23 +343,24 @@
 
     private async Task SaveFavorite()
     {
-        await queryService.SaveQuery(FmModel.Prompt, ActiveConnection.Name, QueryType.Favorite);
-        Favorites = await queryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
+        await QueryService.SaveQuery(FmModel.Prompt, ActiveConnection.Name, QueryType.Favorite);
+        Favorites = await QueryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
         Snackbar.Add("Saved favorite!", Severity.Success);
     }
 
     private async Task EditQuery()
     {
-        RowData = await dataService.GetDataTable(ActiveConnection, Query);
+        RowData = await DataService.GetDataTable(ActiveConnection, Query);
         Snackbar.Add("Results updated.", Severity.Success);
     }
 
     public async Task LoadDatabase(string databaseName)
     {
-        ActiveConnection = (await connectionService.GetAIConnections()).FirstOrDefault(x => x.Name == databaseName);
-        dbSchema = await dataService.GenerateSchema(ActiveConnection);
-        History = await queryService.GetQueries(ActiveConnection.Name, QueryType.History);
-        Favorites = await queryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
+        var connections = await ConnectionService.GetAIConnections();
+        ActiveConnection = connections?.FirstOrDefault(x => x.Name == databaseName) ?? new AIConnection();
+        dbSchema = await DataService.GenerateSchema(ActiveConnection);
+        History = await QueryService.GetQueries(ActiveConnection.Name ?? string.Empty, QueryType.History);
+        Favorites = await QueryService.GetQueries(ActiveConnection.Name ?? string.Empty, QueryType.Favorite);
         ClearUI();
     }
 
@@ -369,9 +386,12 @@
         ChatHistory.Add(new ChatMessage(ChatRole.User, ChatPrompt));
         ChatPrompt = "";
 
-        var result = await aiService.ChatPrompt(ChatHistory, aiModel, aiPlatform);
+        var result = await AiService.ChatPrompt(ChatHistory, aiModel, aiPlatform);
 
-        ChatHistory.Add(new ChatMessage(ChatRole.Assistant, result.Messages[0].Text));
+        if (result?.Messages != null && result.Messages.Count > 0)
+        {
+            ChatHistory.Add(new ChatMessage(ChatRole.Assistant, result.Messages[0].Text));
+        }
         chatLoading = false;
     }
 
@@ -383,7 +403,6 @@
 
     public async Task OnSubmit()
     {
-
         await RunDataChat(FmModel.Prompt);
     }
 
@@ -394,19 +413,19 @@
             Loading = true;
             ChatHistory.Clear();
             LoadingMessage = "Getting the AI query...";
-            var aiResponse = await aiService.GetAISQLQuery(aiModel, aiPlatform, Prompt, dbSchema, ActiveConnection.DatabaseType);
+            var aiResponse = await AiService.GetAISQLQuery(aiModel, aiPlatform, Prompt, dbSchema, ActiveConnection.DatabaseType);
 
             Query = aiResponse.query;
             Summary = aiResponse.summary;
 
             LoadingMessage = "Running the Database query...";
-            RowData = await dataService.GetDataTable(ActiveConnection, aiResponse.query);
+            RowData = await DataService.GetDataTable(ActiveConnection, aiResponse.query);
             ChatHistory.Add(new ChatMessage(ChatRole.System, "You are a helpful AI assistant. Provide helpful insights about the following data: " + JsonSerializer.Serialize(RowData)));
 
             Loading = false;
-            await queryService.SaveQuery(Prompt, ActiveConnection.Name, QueryType.History);
-            History = await queryService.GetQueries(ActiveConnection.Name, QueryType.History);
-            Favorites = await queryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
+            await QueryService.SaveQuery(Prompt, ActiveConnection.Name, QueryType.History);
+            History = await QueryService.GetQueries(ActiveConnection.Name, QueryType.History);
+            Favorites = await QueryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
             Error = string.Empty;
         }
         catch (Exception e)
