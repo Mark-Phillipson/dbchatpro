@@ -320,7 +320,7 @@
         History = await queryService.GetQueries(ActiveConnection.Name, QueryType.History);
         Favorites = await queryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
         if (Environment.MachineName=="J40L4V3") { 
-            aiPlatform="OPENAI";
+            aiPlatform="OpenAI";
             aiModel="gpt-4o";
          }
     }
@@ -411,7 +411,7 @@
         }
         catch (Exception e)
         {
-            Error = e.Message;
+            Error = e.Message + "\n\n"+ e.StackTrace;
             Loading = false;
             LoadingMessage = String.Empty;
         }
