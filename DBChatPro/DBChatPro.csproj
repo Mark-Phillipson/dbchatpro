@@ -4,6 +4,8 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>e1c7a91e-9eaf-44d4-9f3a-e9c79ed4e83a</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 
 
@@ -21,6 +23,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
 		<PackageReference Include="Azure.AI.OpenAI" Version="2.2.0-beta.2" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1-Preview.1" />
 		<PackageReference Include="MudBlazor" Version="6.*" />
 		<PackageReference Include="MySqlConnector.DependencyInjection" Version="2.4.0" />
 		<PackageReference Include="Npgsql" Version="9.0.2" />
