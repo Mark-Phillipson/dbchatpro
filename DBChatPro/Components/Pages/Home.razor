@@ -319,7 +319,10 @@
         }
         History = await queryService.GetQueries(ActiveConnection.Name, QueryType.History);
         Favorites = await queryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
-
+        if (Environment.MachineName=="J40L4V3") { 
+            aiPlatform="OPENAI";
+            aiModel="gpt-4o";
+         }
     }
 
     private async Task SaveFavorite()

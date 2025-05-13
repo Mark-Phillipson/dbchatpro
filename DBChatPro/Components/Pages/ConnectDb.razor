@@ -112,6 +112,9 @@
         {
             var test = e.Message;
         }
+        aiConnection.DatabaseType="MSSQL";
+        aiConnection.Name="MyDatabase";
+        if (Environment.MachineName=="J40L4V3") { aiConnection.ConnectionString="Data Source=Localhost;Initial Catalog=VoiceLauncher;Integrated Security=True;Connect Timeout=120;Encrypt=False;TrustServerCertificate=True;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"; }
     }
 
     private async Task OnValidSubmit(EditContext context)

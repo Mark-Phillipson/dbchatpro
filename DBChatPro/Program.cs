@@ -62,8 +62,8 @@ var credential = new ChainedTokenCredential(userAssignedIdentityCredential, azur
 // Use in-memory services in local mode
 if (builder.Configuration["EnvironmentMode"] == "local")
 {
-    builder.Services.AddSingleton<IQueryService, InMemoryQueryService>();
-    builder.Services.AddSingleton<IConnectionService, InMemoryConnectionService>();
+    builder.Services.AddSingleton<IQueryService, JsonQueryService>();
+    builder.Services.AddScoped<IConnectionService, InMemoryConnectionService>();
 }
 // AZURE HOSTED ONLY FOR USE WITH AZURE DEVELOPER CLI - currently only supports hosting on Azure with Azure OpenAI, so use Azure services in hosted mode
 else if (builder.Configuration["EnvironmentMode"] == "azure")
