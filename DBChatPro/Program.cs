@@ -68,11 +68,14 @@ if (builder.Configuration["EnvironmentMode"] == "local")
 // AZURE HOSTED ONLY FOR USE WITH AZURE DEVELOPER CLI - currently only supports hosting on Azure with Azure OpenAI, so use Azure services in hosted mode
 else if (builder.Configuration["EnvironmentMode"] == "azure")
 {
-    var azureOpenAIEndpoint = new Uri(builder.Configuration["AZURE_OPENAI_ENDPOINT"]);
-    var azureTableEndpoint = new Uri(builder.Configuration["AZURE_STORAGE_ENDPOINT"]);
-    var azureKeyVaultEndpoint = new Uri(builder.Configuration["AZURE_KEYVAULT_ENDPOINT"]);
+    var azureOpenAIEndpoint = new Uri(builder.Configuration["AZURE_OPENAI_ENDPOINT"] ?? 
+        throw new InvalidOperationException("Azure OpenAI Endpoint configuration is missing"));
+    var azureTableEndpoint = new Uri(builder.Configuration["AZURE_STORAGE_ENDPOINT"] ?? 
+        throw new InvalidOperationException("Azure Storage Endpoint configuration is missing"));
+    var azureKeyVaultEndpoint = new Uri(builder.Configuration["AZURE_KEYVAULT_ENDPOINT"] ?? 
+        throw new InvalidOperationException("Azure KeyVault Endpoint configuration is missing"));
 
-    builder.Services.AddAzureClients(async clientBuilder =>
+    builder.Services.AddAzureClients(clientBuilder =>
     {
         // Register the table storage and key vault services
         clientBuilder.AddTableServiceClient(azureTableEndpoint);
