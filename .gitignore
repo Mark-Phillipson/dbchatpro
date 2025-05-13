@@ -194,6 +194,12 @@ publish/
 # in these scripts will be unencrypted
 PublishScripts/
 
+# Application settings files with sensitive information
+**/[aA]pp[sS]ettings.json
+**/[aA]pp[sS]ettings.*.json
+**/[lL]ocal.[sS]ettings.json
+**/[sS]ecrets.json
+
 # NuGet Packages
 *.nupkg
 # NuGet Symbol Packages
