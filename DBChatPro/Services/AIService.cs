@@ -17,7 +17,8 @@ namespace DBChatPro.Services
 
     public class AIService(IConfiguration config, IServiceProvider serviceProvider)
     {
-        IChatClient aiClient;
+        // Make the field nullable to prevent CS8618 warning
+        private IChatClient? aiClient;
 
         public async Task<AIQuery> GetAISQLQuery(string aiModel, string aiService, string userPrompt, DatabaseSchema dbSchema, string databaseType)
         {
@@ -28,7 +29,7 @@ namespace DBChatPro.Services
 
             List<ChatMessage> chatHistory = new List<ChatMessage>();
             var builder = new StringBuilder();
-            var maxRows = config.GetValue<string>("MAX_ROWS");
+            var maxRows = config.GetValue<string>("MAX_ROWS") ?? "100"; // Default to 100 if not specified
 
             builder.AppendLine("Your are a helpful, cheerful database assistant. Do not respond with any information unrelated to databases or queries. Use the following database schema when creating your answers:");
 
@@ -67,11 +68,14 @@ namespace DBChatPro.Services
 
             try
             {
-                return JsonSerializer.Deserialize<AIQuery>(responseContent);
+                // Note: JsonSerializer.Deserialize can return null, so we'll handle that
+                var result = JsonSerializer.Deserialize<AIQuery>(responseContent);
+                return result ?? new AIQuery { summary = "Failed to parse response", query = "SELECT 'Error parsing AI response'" };
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                throw new Exception("Failed to parse AI response as a SQL Query. The AI response was: " + response.Messages[0].Text);
+                // Use the exception variable to avoid CS0168 warning
+                throw new Exception($"Failed to parse AI response as a SQL Query. Error: {ex.Message}. The AI response was: {response.Messages[0].Text}");
             }
         }
 
@@ -80,26 +84,34 @@ namespace DBChatPro.Services
             switch (aiService)
             {
                 case "AzureOpenAI":
+                    var azureEndpoint = config.GetValue<string>("AZURE_OPENAI_ENDPOINT") ?? 
+                        throw new ArgumentNullException("AZURE_OPENAI_ENDPOINT", "Azure OpenAI endpoint is not configured");
                     return new AzureOpenAIClient(
-                            new Uri(config.GetValue<string>("AZURE_OPENAI_ENDPOINT")),
+                            new Uri(azureEndpoint),
                             new DefaultAzureCredential())
                                 .AsChatClient(modelId: aiModel);
                 case "OpenAI":
-                        return new OpenAIClient(config.GetValue<string>("OPENAI_KEY"))
-                                    .AsChatClient(modelId: aiModel);
+                    var openAiKey = config.GetValue<string>("OPENAI_KEY") ?? 
+                        throw new ArgumentNullException("OPENAI_KEY", "OpenAI API key is not configured");
+                    return new OpenAIClient(openAiKey)
+                                .AsChatClient(modelId: aiModel);
                 case "Ollama":
-                        return new OllamaChatClient(config.GetValue<string>("OLLAMA_ENDPOINT"), aiModel);
+                    var ollamaEndpoint = config.GetValue<string>("OLLAMA_ENDPOINT") ?? 
+                        throw new ArgumentNullException("OLLAMA_ENDPOINT", "Ollama endpoint is not configured");
+                    return new OllamaChatClient(ollamaEndpoint, aiModel);
                 case "GitHubModels":
+                    var githubKey = config.GetValue<string>("GITHUB_MODELS_KEY") ?? 
+                        throw new ArgumentNullException("GITHUB_MODELS_KEY", "GitHub models API key is not configured");
                     return new ChatCompletionsClient(
                             endpoint: new Uri("https://models.inference.ai.azure.com"),
-                            new AzureKeyCredential(config.GetValue<string>("GITHUB_MODELS_KEY")))
+                            new AzureKeyCredential(githubKey))
                                 .AsChatClient(aiModel);
                 case "AWSBedrock":
                     var bedrockClient = serviceProvider.GetRequiredService<IAmazonBedrockRuntime>();
                     return new AWSBedrockClient(bedrockClient, aiModel);
+                default:
+                    throw new ArgumentException($"Unsupported AI service: {aiService}", nameof(aiService));
             }
-
-            return null;
         }
 
         public async Task<ChatResponse> ChatPrompt(List<ChatMessage> prompt, string aiModel, string aiService)
@@ -109,7 +121,7 @@ namespace DBChatPro.Services
                 aiClient = CreateChatClient(aiModel, aiService);
             }
 
-            return (await aiClient.GetResponseAsync(prompt));
+            return await aiClient.GetResponseAsync(prompt);
         }
     }
 }
