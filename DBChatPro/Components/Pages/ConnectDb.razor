@@ -98,6 +98,7 @@
     List<AIConnection> ExistingDbs = new List<AIConnection>();
 
     string Error = String.Empty;
+    private bool Loading { get; set; } = false;
     private bool Deleting = false;
 
     protected override async Task OnInitializedAsync()
@@ -119,6 +120,7 @@
     {
         try
         {
+            Loading = true;
             dbSchema = await dataService.GenerateSchema(aiConnection);
 
             // Try to get datatypes for each column using the schema's raw info if available
@@ -159,6 +161,7 @@
                 table.Columns = newColumns;
             }
 
+            Loading = false;
             Error = String.Empty;
         }
         catch (Exception e)
@@ -179,8 +182,11 @@
             Error = String.Empty;
             
             // Delete operation can take a while with some secure storage so we just update the UI manually
-            var removeEntry = ExistingDbs.FirstOrDefault(x => x.Name == name);
-            ExistingDbs.Remove(removeEntry);
+            var connection = ExistingDbs.FirstOrDefault(x => x.Name == name);
+            if (connection != null)
+            {
+                ExistingDbs.Remove(connection);
+            }
         }
         catch (Exception e)
         {
