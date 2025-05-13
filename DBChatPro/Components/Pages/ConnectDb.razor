@@ -98,8 +98,6 @@
     List<AIConnection> ExistingDbs = new List<AIConnection>();
 
     string Error = String.Empty;
-    bool success;
-    private bool Loading = false;
     private bool Deleting = false;
 
     protected override async Task OnInitializedAsync()
@@ -121,7 +119,6 @@
     {
         try
         {
-            Loading = true;
             dbSchema = await dataService.GenerateSchema(aiConnection);
 
             // Try to get datatypes for each column using the schema's raw info if available
@@ -162,7 +159,6 @@
                 table.Columns = newColumns;
             }
 
-            Loading = false;
             Error = String.Empty;
         }
         catch (Exception e)
