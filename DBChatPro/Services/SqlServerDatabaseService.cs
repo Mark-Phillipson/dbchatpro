@@ -15,7 +15,17 @@ namespace DBChatPro
                 using var command = new SqlCommand(sqlQuery, connection);
 
                 await connection.OpenAsync();
-                using var reader = await command.ExecuteReaderAsync();
+
+                SqlDataReader? reader = null;
+                try
+                {
+                    reader = await command.ExecuteReaderAsync();
+                }
+                catch (Exception exception)
+                {
+                    // Rethrow the exception to be handled by the caller
+                    throw;
+                }
 
                 bool headersAdded = false;
                 if (reader.HasRows){

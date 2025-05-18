@@ -409,8 +409,17 @@
 
     private async Task EditQuery()
     {
-        RowData = await DataService.GetDataTable(ActiveConnection, Query);
-        Snackbar.Add("Results updated.", Severity.Success);
+        try
+        {
+            RowData = await DataService.GetDataTable(ActiveConnection, Query);
+            Snackbar.Add("Results updated.", Severity.Success);
+            Error = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message + "\n\n" + ex.StackTrace;
+            Snackbar.Add("Error running query.", Severity.Error);
+        }
     }
 
     public async Task LoadDatabase(string databaseName)
@@ -478,14 +487,22 @@
             Summary = aiResponse.summary;
 
             LoadingMessage = "Running the Database query...";
-            RowData = await DataService.GetDataTable(ActiveConnection, aiResponse.query);
+            try
+            {
+                RowData = await DataService.GetDataTable(ActiveConnection, aiResponse.query);
+                Error = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Error = ex.Message + "\n\n" + ex.StackTrace;
+                RowData = new List<List<string>>();
+            }
             ChatHistory.Add(new ChatMessage(ChatRole.System, "You are a helpful AI assistant. Provide helpful insights about the following data: " + JsonSerializer.Serialize(RowData)));
 
             Loading = false;
             await QueryService.SaveQuery(Prompt, ActiveConnection.Name, QueryType.History);
             History = await QueryService.GetQueries(ActiveConnection.Name, QueryType.History);
             Favorites = await QueryService.GetQueries(ActiveConnection.Name, QueryType.Favorite);
-            Error = string.Empty;
         }
         catch (Exception e)
         {
