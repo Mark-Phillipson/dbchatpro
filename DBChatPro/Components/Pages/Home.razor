@@ -15,7 +15,6 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
-
 @inject ISnackbar Snackbar
 @inject IQueryService QueryService
 @inject IConnectionService ConnectionService
@@ -394,10 +393,8 @@
         }
         History = await QueryService.GetQueries(ActiveConnection.Name ?? string.Empty, QueryType.History);
         Favorites = await QueryService.GetQueries(ActiveConnection.Name ?? string.Empty, QueryType.Favorite);
-        if (Environment.MachineName=="J40L4V3") { 
-            aiPlatform="OpenAI";
-            aiModel="gpt-4o";
-         }
+            aiPlatform="AzureOpenAI";
+            aiModel="gpt-4.1-mini";
     }
 
     private async Task SaveFavorite()
