@@ -86,10 +86,23 @@ namespace DBChatPro.Services
                 case "AzureOpenAI":
                     var azureEndpoint = config.GetValue<string>("AZURE_OPENAI_ENDPOINT") ?? 
                         throw new ArgumentNullException("AZURE_OPENAI_ENDPOINT", "Azure OpenAI endpoint is not configured");
-                    return new AzureOpenAIClient(
-                            new Uri(azureEndpoint),
-                            new DefaultAzureCredential())
-                                .AsChatClient(modelId: aiModel);
+                    var azureKey = config.GetValue<string>("AZURE_OPENAI_KEY");
+                    if (!string.IsNullOrEmpty(azureKey))
+                    {
+                        // Use AzureKeyCredential if key is provided
+                        return new AzureOpenAIClient(
+                                new Uri(azureEndpoint),
+                                new AzureKeyCredential(azureKey))
+                                    .AsChatClient(modelId: aiModel);
+                    }
+                    else
+                    {
+                        // Fallback to DefaultAzureCredential (interactive login)
+                        return new AzureOpenAIClient(
+                                new Uri(azureEndpoint),
+                                new DefaultAzureCredential())
+                                    .AsChatClient(modelId: aiModel);
+                    }
                 case "OpenAI":
                     var openAiKey = config.GetValue<string>("OPENAI_KEY") ?? 
                         throw new ArgumentNullException("OPENAI_KEY", "OpenAI API key is not configured");
