@@ -14,9 +14,8 @@ using OpenAIChatTest;
 using System.ClientModel;
 
 var builder = WebApplication.CreateBuilder(args);
-TestingChat testingChat = new TestingChat();
-testingChat.TestingMinimalChat();
-await testingChat.TestChatting();
+// TestingChat testingChat = new TestingChat();
+// testingChat.TestingMinimalChat();
 // var keyVaultEndpoint = new Uri(Environment.GetEnvironmentVariable("VaultUri")!);
 // builder.Configuration.AddAzureKeyVault(keyVaultEndpoint, new DefaultAzureCredential());
 

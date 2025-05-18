@@ -33,7 +33,7 @@ namespace DBChatPro.Services
 
             builder.AppendLine("Your are a helpful, cheerful database assistant. Do not respond with any information unrelated to databases or queries. Use the following database schema when creating your answers:");
 
-            foreach(var table in dbSchema.SchemaRaw)
+            foreach (var table in dbSchema.SchemaRaw)
             {
                 builder.AppendLine(table);
             }
@@ -59,7 +59,7 @@ namespace DBChatPro.Services
             {
                 chatHistory.Add(new ChatMessage(Microsoft.Extensions.AI.ChatRole.User, builder.ToString()));
             }
-            
+
             chatHistory.Add(new ChatMessage(Microsoft.Extensions.AI.ChatRole.User, userPrompt));
 
             // Send request to Azure OpenAI model
@@ -84,12 +84,13 @@ namespace DBChatPro.Services
             switch (aiService)
             {
                 case "AzureOpenAI":
-                    var azureEndpoint = config.GetValue<string>("AZURE_OPENAI_ENDPOINT") ?? 
+                    var azureEndpoint = config.GetValue<string>("AZURE_OPENAI_ENDPOINT") ??
                         throw new ArgumentNullException("AZURE_OPENAI_ENDPOINT", "Azure OpenAI endpoint is not configured");
                     var azureKey = config.GetValue<string>("AZURE_OPENAI_KEY");
+                    var deploymentName = config.GetValue<string>("AZURE_OPENAI_DEPLOYMENT_NAME");
                     if (!string.IsNullOrEmpty(azureKey))
                     {
-                        // Use AzureKeyCredential if key is provided
+                        // Use AzureKeyCredential if key is provided Also supply the deployment name
                         return new AzureOpenAIClient(
                                 new Uri(azureEndpoint),
                                 new AzureKeyCredential(azureKey))
@@ -104,16 +105,16 @@ namespace DBChatPro.Services
                                     .AsChatClient(modelId: aiModel);
                     }
                 case "OpenAI":
-                    var openAiKey = config.GetValue<string>("OPENAI_KEY") ?? 
+                    var openAiKey = config.GetValue<string>("OPENAI_KEY") ??
                         throw new ArgumentNullException("OPENAI_KEY", "OpenAI API key is not configured");
                     return new OpenAIClient(openAiKey)
                                 .AsChatClient(modelId: aiModel);
                 case "Ollama":
-                    var ollamaEndpoint = config.GetValue<string>("OLLAMA_ENDPOINT") ?? 
+                    var ollamaEndpoint = config.GetValue<string>("OLLAMA_ENDPOINT") ??
                         throw new ArgumentNullException("OLLAMA_ENDPOINT", "Ollama endpoint is not configured");
                     return new OllamaChatClient(ollamaEndpoint, aiModel);
                 case "GitHubModels":
-                    var githubKey = config.GetValue<string>("GITHUB_MODELS_KEY") ?? 
+                    var githubKey = config.GetValue<string>("GITHUB_MODELS_KEY") ??
                         throw new ArgumentNullException("GITHUB_MODELS_KEY", "GitHub models API key is not configured");
                     return new ChatCompletionsClient(
                             endpoint: new Uri("https://models.inference.ai.azure.com"),
@@ -133,7 +134,6 @@ namespace DBChatPro.Services
             {
                 aiClient = CreateChatClient(aiModel, aiService);
             }
-
             return await aiClient.GetResponseAsync(prompt);
         }
     }
